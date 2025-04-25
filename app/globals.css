@@ -1,0 +1,480 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 11.2%;
+
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 46.9%;
+
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 11.2%;
+
+    --destructive: 0 0% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 91.4%;
+    --input: 0 0% 91.4%;
+    --ring: 0 0% 53.3%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 26.1%;
+    --sidebar-primary: 0 0% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 95.9%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: 0 0% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 4.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 4.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 4.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 17.5%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 17.5%;
+    --muted-foreground: 0 0% 65.1%;
+
+    --accent: 0 0% 17.5%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 0% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 17.5%;
+    --input: 0 0% 17.5%;
+    --ring: 0 0% 48%;
+
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 95.9%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 15.9%;
+    --sidebar-accent-foreground: 0 0% 95.9%;
+    --sidebar-border: 0 0% 15.9%;
+    --sidebar-ring: 0 0% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Inter", sans-serif;
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* New animations for sidebar interactivity */
+@keyframes scaleUp {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Custom utility classes */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-in {
+  animation: slideInUp 0.4s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s infinite;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.2s ease-out;
+}
+
+.animate-bounce-subtle {
+  animation: bounce 0.5s ease-in-out;
+}
+
+.animate-glow {
+  animation: glow 1.5s infinite;
+}
+
+/* Custom component styles */
+.dashboard-card {
+  @apply transition-all duration-300 hover:shadow-md;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+}
+
+.statistic-card {
+  @apply transition-all duration-300 hover:shadow-md;
+}
+
+.statistic-card:hover {
+  transform: translateY(-2px);
+}
+
+.table-row-hover {
+  @apply transition-colors duration-200;
+}
+
+.notification-badge {
+  @apply absolute -top-1 -right-1 flex items-center justify-center;
+  animation: pulse 2s infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* Table improvements */
+.data-table {
+  @apply w-full border-collapse;
+}
+
+.data-table th {
+  @apply bg-muted/50 text-muted-foreground font-medium text-sm px-4 py-3 text-left;
+}
+
+.data-table td {
+  @apply px-4 py-3 border-b border-border;
+}
+
+.data-table tr:last-child td {
+  @apply border-b-0;
+}
+
+.data-table tr:hover td {
+  @apply bg-muted/30;
+}
+
+/* Form improvements */
+.form-input {
+  @apply transition-all duration-200;
+}
+
+.form-input:focus {
+  @apply ring-2 ring-primary/30;
+}
+
+/* Button improvements */
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors;
+}
+
+/* Card improvements */
+.card-hover {
+  @apply transition-all duration-300;
+}
+
+.card-hover:hover {
+  @apply shadow-md;
+  transform: translateY(-2px);
+}
+
+/* File upload area */
+.file-upload-area {
+  @apply border-2 border-dashed rounded-md p-6 cursor-pointer transition-colors duration-200;
+}
+
+.file-upload-area:hover {
+  @apply bg-muted/50;
+}
+
+/* Progress bar animation */
+.progress-bar-animate .progress-bar-indicator {
+  transition: transform 1s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .table-responsive {
+    @apply overflow-x-auto -mx-4 px-4;
+  }
+
+  .table-responsive table {
+    @apply min-w-full;
+  }
+
+  .mobile-full-width {
+    @apply w-full;
+  }
+
+  .mobile-stack {
+    @apply flex-col;
+  }
+
+  .mobile-hidden {
+    @apply hidden sm:block;
+  }
+
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+}
+
+/* Offline mode styles */
+.offline-indicator {
+  @apply fixed bottom-4 right-4 z-50 px-3 py-2 rounded-full text-sm font-medium;
+  animation: pulse 2s infinite;
+}
+
+/* Lazy loading skeleton */
+.skeleton {
+  @apply bg-gray-200 dark:bg-gray-700 animate-pulse rounded;
+}
+
+/* Service worker for offline support */
+.offline-ready {
+  @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+}
+
+.offline-error {
+  @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+}
+
+/* Sidebar animation improvements */
+.sidebar-expanded {
+  width: 16rem;
+  opacity: 1;
+  transform: translateX(0);
+  transition: width 0.2s ease-out, opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.sidebar-collapsed {
+  width: 4rem;
+  opacity: 0.95;
+  transition: width 0.2s ease-out, opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Sidebar navigation improvements */
+.sidebar-nav-group {
+  @apply py-1;
+}
+
+.sidebar-nav-group-title {
+  @apply text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2;
+}
+
+.sidebar-nav-item {
+  @apply flex items-center px-3 py-2 text-sm rounded-md transition-colors duration-200;
+}
+
+.sidebar-nav-item:hover {
+  @apply bg-muted/50;
+}
+
+.sidebar-nav-item.active {
+  @apply bg-primary text-primary-foreground font-medium;
+}
+
+.sidebar-nav-item-icon {
+  @apply mr-3 text-muted-foreground;
+}
+
+.sidebar-nav-item.active .sidebar-nav-item-icon {
+  @apply text-primary-foreground;
+}
+
+/* Enhanced sidebar interactions */
+.sidebar-icon {
+  @apply transition-all duration-300;
+}
+
+.sidebar-icon:hover {
+  @apply scale-110;
+}
+
+.sidebar-item {
+  @apply transition-all duration-300;
+}
+
+.sidebar-item:hover {
+  @apply translate-x-1;
+}
+
+.sidebar-item.active {
+  @apply shadow-md;
+}
+
+/* Editable cell styles */
+.editable-cell {
+  @apply relative cursor-text;
+}
+
+.editable-cell:hover::after {
+  content: "";
+  @apply absolute inset-0 border border-dashed border-primary/50 rounded pointer-events-none;
+}
+
+.editable-cell-input {
+  @apply w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-primary rounded px-2 py-1;
+}
+
+/* Team performance section styles */
+.team-metrics-card {
+  @apply bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20;
+}
+
+.agent-row {
+  @apply transition-colors duration-200 hover:bg-muted/50 cursor-pointer;
+}
+
+.agent-row.editing {
+  @apply bg-blue-50 dark:bg-blue-900/20;
+}
+
+.commission-tier-0 {
+  @apply text-gray-500;
+}
+.commission-tier-4 {
+  @apply text-gray-500;
+}
+.commission-tier-5 {
+  @apply text-gray-500;
+}
+.commission-tier-7 {
+  @apply text-gray-500;
+}
+.commission-tier-9 {
+  @apply text-gray-500;
+}
+.commission-tier-10 {
+  @apply text-gray-500;
+}
+
+@keyframes pending-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(234, 179, 8, 0.2);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+    transform: scale(1);
+  }
+}
+
+.animate-pending-pulse {
+  animation: pending-pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
