@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, FileText, Edit2, BarChart2, UserPlus } from "lucide-react"
+import { Plus, FileText, Edit2, BarChart2, UserPlus, Video } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -62,9 +62,9 @@ export default function FloatingActionButton() {
       description: "Create a new client profile in the system",
       icon: <UserPlus className="h-5 w-5" />,
       onClick: () => handleNavigation("/addedclients"),
-      position: "translate-y-[-180px]",
-      mobilePosition: "translate-y-[-180px]",
-      color: "bg-blue-600 hover:bg-blue-700",
+      position: "translate-y-[-225px]",
+      mobilePosition: "translate-y-[-225px]",
+      color: "bg-gray-900 hover:bg-gray-800",
     },
     {
       id: "create-report",
@@ -72,9 +72,9 @@ export default function FloatingActionButton() {
       description: "Generate financial or performance reports",
       icon: <BarChart2 className="h-5 w-5" />,
       onClick: () => handleNavigation("/?tab=reports"),
-      position: "translate-y-[-135px]",
-      mobilePosition: "translate-y-[-135px]",
-      color: "bg-purple-600 hover:bg-purple-700",
+      position: "translate-y-[-180px]",
+      mobilePosition: "translate-y-[-180px]",
+      color: "bg-gray-900 hover:bg-gray-800",
     },
     {
       id: "edit-table",
@@ -82,9 +82,9 @@ export default function FloatingActionButton() {
       description: "Manage agent performance data",
       icon: <Edit2 className="h-5 w-5" />,
       onClick: () => handleNavigation("/?tab=team"),
-      position: "translate-y-[-90px]",
-      mobilePosition: "translate-y-[-90px]",
-      color: "bg-amber-600 hover:bg-amber-700",
+      position: "translate-y-[-135px]",
+      mobilePosition: "translate-y-[-135px]",
+      color: "bg-gray-900 hover:bg-gray-800",
     },
     {
       id: "request-order",
@@ -92,9 +92,19 @@ export default function FloatingActionButton() {
       description: "Create a new order request for processing",
       icon: <FileText className="h-5 w-5" />,
       onClick: () => handleNavigation("/?tab=order-requests"),
+      position: "translate-y-[-90px]",
+      mobilePosition: "translate-y-[-90px]",
+      color: "bg-gray-900 hover:bg-gray-800",
+    },
+    {
+      id: "video-call",
+      label: "Video Call Template",
+      description: "Start a new video call session",
+      icon: <Video className="h-5 w-5" />,
+      onClick: () => handleNavigation("/videocall"),
       position: "translate-y-[-45px]",
       mobilePosition: "translate-y-[-45px]",
-      color: "bg-green-600 hover:bg-green-700",
+      color: "bg-gray-900 hover:bg-gray-800",
     },
   ]
 

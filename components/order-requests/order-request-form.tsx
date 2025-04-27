@@ -382,13 +382,40 @@ export default function OrderRequestForm() {
                       <Label htmlFor={`location-${item.id}`} className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" /> Location
                       </Label>
-                      <Input
+                      <select
                         id={`location-${item.id}`}
                         value={item.location}
                         onChange={(e) => updateOrderItem(item.id, "location", e.target.value)}
-                        placeholder="Enter location"
-                        className={locationErrors[item.id] ? "border-red-500" : ""}
-                      />
+                        className={cn(
+                          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                          locationErrors[item.id] ? "border-red-500" : "",
+                        )}
+                      >
+                        <option value="">Select a country</option>
+                        <option value="Albania">Albania</option>
+                        <option value="Argentina">Argentina</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Canada">Canada</option>
+                        <option value="China">China</option>
+                        <option value="France">France</option>
+                        <option value="Germany">Germany</option>
+                        <option value="Italy">Italy</option>
+                        <option value="Japan">Japan</option>
+                        <option value="Malaysia">Malaysia</option>
+                        <option value="Netherlands">Netherlands</option>
+                        <option value="Philippines">Philippines</option>
+                        <option value="Russia">Russia</option>
+                        <option value="Singapore">Singapore</option>
+                        <option value="South Korea">South Korea</option>
+                        <option value="Spain">Spain</option>
+                        <option value="Switzerland">Switzerland</option>
+                        <option value="Thailand">Thailand</option>
+                        <option value="Turkey">Turkey</option>
+                        <option value="United Arab Emirates">United Arab Emirates</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="United States">United States</option>
+                        <option value="Vietnam">Vietnam</option>
+                      </select>
                       {locationErrors[item.id] && (
                         <div className="text-sm text-red-500 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
