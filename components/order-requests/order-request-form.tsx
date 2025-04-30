@@ -386,17 +386,17 @@ export default function OrderRequestForm() {
                         id={`location-${item.id}`}
                         value={item.location}
                         onChange={(e) => updateOrderItem(item.id, "location", e.target.value)}
-                        className={cn(
-                          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                          locationErrors[item.id] ? "border-red-500" : "",
-                        )}
+                        className={`w-full rounded-md border ${
+                          locationErrors[item.id] ? "border-red-500" : "border-input"
+                        } bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
                       >
-                        <option value="">Select a country</option>
+                        <option value="" disabled>
+                          Select a location
+                        </option>
                         <option value="Albania">Albania</option>
                         <option value="Argentina">Argentina</option>
                         <option value="Australia">Australia</option>
                         <option value="Canada">Canada</option>
-                        <option value="China">China</option>
                         <option value="France">France</option>
                         <option value="Germany">Germany</option>
                         <option value="Italy">Italy</option>
@@ -415,6 +415,7 @@ export default function OrderRequestForm() {
                         <option value="United Kingdom">United Kingdom</option>
                         <option value="United States">United States</option>
                         <option value="Vietnam">Vietnam</option>
+                        <option value="China">China</option>
                       </select>
                       {locationErrors[item.id] && (
                         <div className="text-sm text-red-500 flex items-center">

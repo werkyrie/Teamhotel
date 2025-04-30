@@ -14,10 +14,20 @@ export default function OrderRequestPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold">Order Requests</h2>
-        <Button onClick={() => setActiveTab("new")} variant={activeTab === "list" ? "default" : "outline"}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Create New Request
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            onClick={() => window.open("https://ordersbalance.netlify.app/?view=public", "_blank")}
+            variant="secondary"
+            className="flex items-center"
+          >
+            <FileText className="h-4 w-4 mr-2 animate-pulse text-yellow-500 drop-shadow-[0_0_3px_rgba(234,179,8,0.5)]" />
+            View Client Balance
+          </Button>
+          <Button onClick={() => setActiveTab("new")} variant={activeTab === "list" ? "default" : "outline"}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Create New Request
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
