@@ -45,7 +45,7 @@ export default function AgentAssignmentDashboard() {
   const [applicationFilter, setApplicationFilter] = useState("all-applications")
   const [agentFilter, setAgentFilter] = useState("all-agents")
   const [monthFilter, setMonthFilter] = useState("all-months")
-  const [rowsPerPage, setRowsPerPage] = useState("10")
+  const [rowsPerPage, setRowsPerPage] = useState("20")
   const [filteredClients, setFilteredClients] = useState<ClientAssignment[]>([])
   const [editingCell, setEditingCell] = useState<EditingCell>({ clientId: null, field: null, value: "" })
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
@@ -66,6 +66,9 @@ export default function AgentAssignmentDashboard() {
 
   // Calculate dashboard stats
   const totalClients = clients.length
+
+  const [selectedClients, setSelectedClients] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
 
   // Calculate agent workloads
   const agentWorkloads = agents.reduce(
@@ -299,6 +302,25 @@ export default function AgentAssignmentDashboard() {
         return
       }
 
+      // Check for 100% duplicate entries (all fields match)
+      const isDuplicate = clients.some(
+        (client) =>
+          client.name.toLowerCase() === name.toLowerCase() &&
+          client.age === age &&
+          client.location.toLowerCase() === (location || "Unknown").toLowerCase() &&
+          client.work.toLowerCase() === (work || "Unknown").toLowerCase() &&
+          client.application.toLowerCase() === (application || "Unknown").toLowerCase(),
+      )
+
+      if (isDuplicate) {
+        toast({
+          title: "Duplicate Entry",
+          description: `An identical client already exists with the same name, age, location, work, and application`,
+          variant: "destructive",
+        })
+        return
+      }
+
       // Create new client with default values for optional fields
       const today = new Date().toISOString().split("T")[0]
       const newClient: Omit<ClientAssignment, "id"> = {
@@ -465,6 +487,91 @@ export default function AgentAssignmentDashboard() {
       })
     }
   }
+
+  // Handle bulk deletion of selected clients
+  const handleBulkDelete = async () => {
+    if (selectedClients.length === 0) {
+      toast({
+        title: "No Clients Selected",
+        description: "Please select at least one client to delete",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Extra safety check to ensure only admins can delete
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can delete client records",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      if (!user) {
+        // Fallback to localStorage
+        setClients((prevClients) => prevClients.filter((client) => !selectedClients.includes(client.id)))
+        localStorage.setItem(
+          "assignedClients",
+          JSON.stringify(clients.filter((client) => !selectedClients.includes(client.id))),
+        )
+      } else {
+        // Delete from Firestore
+        for (const clientId of selectedClients) {
+          const clientRef = doc(db, "clientAssignments", clientId)
+          await deleteDoc(clientRef)
+        }
+      }
+
+      toast({
+        title: "Clients Deleted",
+        description: `${selectedClients.length} clients have been deleted successfully`,
+      })
+
+      // Reset selection
+      setSelectedClients([])
+      setSelectAll(false)
+    } catch (error) {
+      console.error("Error deleting clients:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete selected clients",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Toggle selection of a single client
+  const toggleClientSelection = (clientId: string) => {
+    setSelectedClients((prev) => {
+      if (prev.includes(clientId)) {
+        return prev.filter((id) => id !== clientId)
+      } else {
+        return [...prev, clientId]
+      }
+    })
+  }
+
+  // Toggle selection of all clients
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedClients([])
+    } else {
+      setSelectedClients(filteredClients.map((client) => client.id))
+    }
+    setSelectAll(!selectAll)
+  }
+
+  // Effect to update selectAll state when selections change
+  useEffect(() => {
+    if (filteredClients.length > 0 && selectedClients.length === filteredClients.length) {
+      setSelectAll(true)
+    } else {
+      setSelectAll(false)
+    }
+  }, [selectedClients, filteredClients])
 
   // Update isAdmin state when user changes
   useEffect(() => {
@@ -658,10 +765,10 @@ export default function AgentAssignmentDashboard() {
                 <SelectValue placeholder="10" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="20">20</SelectItem>
                 <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -683,6 +790,24 @@ export default function AgentAssignmentDashboard() {
           </div>
         </div>
 
+        {/* Bulk Actions */}
+        {isAdmin && selectedClients.length > 0 && (
+          <div className="mb-4 flex justify-between items-center">
+            <div className="text-sm">
+              <span className="font-medium">{selectedClients.length}</span> clients selected
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected
+            </Button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="border rounded-md overflow-hidden shadow-sm dark:border-gray-700">
           {loading ? (
@@ -693,6 +818,16 @@ export default function AgentAssignmentDashboard() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-100 dark:bg-gray-800">
                 <tr>
+                  {isAdmin && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={toggleSelectAll}
+                        className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-700"
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Name
                   </th>
@@ -724,6 +859,16 @@ export default function AgentAssignmentDashboard() {
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredClients.slice(0, Number.parseInt(rowsPerPage)).map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    {isAdmin && (
+                      <td className="px-4 py-2 whitespace-nowrap text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedClients.includes(client.id)}
+                          onChange={() => toggleClientSelection(client.id)}
+                          className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
                       {editingCell.clientId === client.id && editingCell.field === "name" ? (
                         <div className="flex items-center space-x-2">
