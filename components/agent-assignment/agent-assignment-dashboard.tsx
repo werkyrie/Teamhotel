@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase"
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "firebase/firestore"
 
 // Sample agent names - we'll use these for display and tracking
-const agents = ["Annie", "Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Thac", "Vivian"]
+const agents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
 
 // Interface for the currently edited cell
 interface EditingCell {
@@ -302,20 +302,13 @@ export default function AgentAssignmentDashboard() {
         return
       }
 
-      // Check for 100% duplicate entries (all fields match)
-      const isDuplicate = clients.some(
-        (client) =>
-          client.name.toLowerCase() === name.toLowerCase() &&
-          client.age === age &&
-          client.location.toLowerCase() === (location || "Unknown").toLowerCase() &&
-          client.work.toLowerCase() === (work || "Unknown").toLowerCase() &&
-          client.application.toLowerCase() === (application || "Unknown").toLowerCase(),
-      )
+      // Check for duplicate entries
+      const isDuplicate = clients.some((client) => client.name.toLowerCase() === name.toLowerCase())
 
       if (isDuplicate) {
         toast({
           title: "Duplicate Entry",
-          description: `An identical client already exists with the same name, age, location, work, and application`,
+          description: `A client with the name "${name}" already exists`,
           variant: "destructive",
         })
         return
