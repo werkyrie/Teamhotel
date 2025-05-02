@@ -359,8 +359,6 @@ export default function AgentAssignmentDashboard() {
   }
 
   const resetFilters = () => {
-    setLocationFilter("all-locations")
-    setApplicationFilter("all-applications")
     setAgentFilter("all-agents")
     setMonthFilter("all-months")
     setSearchQuery("")
@@ -646,7 +644,11 @@ export default function AgentAssignmentDashboard() {
             <Card key={agent} className="overflow-hidden border-none shadow-sm dark:bg-gray-800">
               <CardContent className="p-4 text-center">
                 <p className="font-medium text-sm mb-1 dark:text-gray-300">{agent}</p>
-                <p className="text-2xl font-bold dark:text-gray-100">{agentWorkloads[agent.toLowerCase()] || 0}</p>
+                <p
+                  className={`text-2xl font-bold ${(agentWorkloads[agent.toLowerCase()] || 0) % 4 === 0 && (agentWorkloads[agent.toLowerCase()] || 0) > 0 ? "text-red-500 dark:text-red-400" : "dark:text-gray-100"}`}
+                >
+                  {agentWorkloads[agent.toLowerCase()] || 0}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -699,41 +701,7 @@ export default function AgentAssignmentDashboard() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-          <div>
-            <label className="text-sm font-medium block mb-1 dark:text-gray-300">Location</label>
-            <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="border-gray-300 focus:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
-                <SelectValue placeholder="All Locations" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-locations">All Locations</SelectItem>
-                {uniqueLocations.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {loc}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium block mb-1 dark:text-gray-300">Application</label>
-            <Select value={applicationFilter} onValueChange={setApplicationFilter}>
-              <SelectTrigger className="border-gray-300 focus:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
-                <SelectValue placeholder="All Applications" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-applications">All Applications</SelectItem>
-                {uniqueApplications.map((app) => (
-                  <SelectItem key={app} value={app}>
-                    {app}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="text-sm font-medium block mb-1 dark:text-gray-300">Agent</label>
             <Select value={agentFilter} onValueChange={setAgentFilter}>
@@ -755,7 +723,7 @@ export default function AgentAssignmentDashboard() {
             <label className="text-sm font-medium block mb-1 dark:text-gray-300">Rows Per Page</label>
             <Select value={rowsPerPage} onValueChange={setRowsPerPage}>
               <SelectTrigger className="border-gray-300 focus:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
-                <SelectValue placeholder="10" />
+                <SelectValue placeholder="20" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="20">20</SelectItem>
@@ -802,13 +770,13 @@ export default function AgentAssignmentDashboard() {
         )}
 
         {/* Table */}
-        <div className="border rounded-md overflow-hidden shadow-sm dark:border-gray-700">
+        <div className="border rounded-md overflow-x-auto shadow-sm dark:border-gray-700">
           {loading ? (
             <div className="p-8 text-center">
               <p>Loading client assignments...</p>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700" style={{ minWidth: "1200px" }}>
               <thead className="bg-gray-100 dark:bg-gray-800">
                 <tr>
                   {isAdmin && (
@@ -850,233 +818,236 @@ export default function AgentAssignmentDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredClients.slice(0, Number.parseInt(rowsPerPage)).map((client) => (
-                  <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                    {isAdmin && (
-                      <td className="px-4 py-2 whitespace-nowrap text-sm">
-                        <input
-                          type="checkbox"
-                          checked={selectedClients.includes(client.id)}
-                          onChange={() => toggleClientSelection(client.id)}
-                          className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-700"
-                        />
-                      </td>
-                    )}
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "name" ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            ref={editInputRef}
-                            value={editingCell.value}
-                            onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                            className="py-1 h-8 text-sm"
-                            autoFocus
+                {filteredClients
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, Number.parseInt(rowsPerPage))
+                  .map((client) => (
+                    <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      {isAdmin && (
+                        <td className="px-4 py-2 whitespace-nowrap text-sm">
+                          <input
+                            type="checkbox"
+                            checked={selectedClients.includes(client.id)}
+                            onChange={() => toggleClientSelection(client.id)}
+                            className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-700"
                           />
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "name")}
-                        >
-                          {client.name}
-                        </div>
+                        </td>
                       )}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "age" ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            value={editingCell.value}
-                            onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                            className="py-1 h-8 text-sm"
-                            autoFocus
-                          />
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "name" ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              ref={editInputRef}
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                              className="py-1 h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "age")}
-                        >
-                          {client.age}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "location" ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            value={editingCell.value}
-                            onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                            className="py-1 h-8 text-sm"
-                            autoFocus
-                          />
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "location")}
-                        >
-                          {client.location}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "work" ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            value={editingCell.value}
-                            onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                            className="py-1 h-8 text-sm"
-                            autoFocus
-                          />
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "work")}
-                        >
-                          {client.work}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "application" ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            value={editingCell.value}
-                            onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                            className="py-1 h-8 text-sm"
-                            autoFocus
-                          />
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "application")}
-                        >
-                          {client.application}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "assignedAgent" ? (
-                        <div className="flex items-center space-x-2">
-                          <Select
-                            value={editingCell.value}
-                            onValueChange={(value) => setEditingCell({ ...editingCell, value })}
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "name")}
                           >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Select agent" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {agents.map((agent) => (
-                                <SelectItem key={agent} value={agent}>
-                                  {agent}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
+                            {client.name}
                           </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "assignedAgent")}
-                        >
-                          {client.assignedAgent}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                      {editingCell.clientId === client.id && editingCell.field === "date" ? (
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            type="date"
-                            value={editingCell.value}
-                            onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                            className="py-1 h-8 text-sm"
-                            autoFocus
-                          />
-                          <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                              ✓
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                              ✕
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                          onClick={() => startEdit(client, "date")}
-                        >
-                          {client.date}
-                        </div>
-                      )}
-                    </td>
-                    {isAdmin && (
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20"
-                          onClick={() => handleDeleteClient(client.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
+                        )}
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "age" ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                              className="py-1 h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "age")}
+                          >
+                            {client.age}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "location" ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                              className="py-1 h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "location")}
+                          >
+                            {client.location}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "work" ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                              className="py-1 h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "work")}
+                          >
+                            {client.work}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "application" ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                              className="py-1 h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "application")}
+                          >
+                            {client.application}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "assignedAgent" ? (
+                          <div className="flex items-center space-x-2">
+                            <Select
+                              value={editingCell.value}
+                              onValueChange={(value) => setEditingCell({ ...editingCell, value })}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Select agent" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {agents.map((agent) => (
+                                  <SelectItem key={agent} value={agent}>
+                                    {agent}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "assignedAgent")}
+                          >
+                            {client.assignedAgent}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        {editingCell.clientId === client.id && editingCell.field === "date" ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="date"
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                              className="py-1 h-8 text-sm"
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                ✓
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                ✕
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                            onClick={() => startEdit(client, "date")}
+                          >
+                            {client.date}
+                          </div>
+                        )}
+                      </td>
+                      {isAdmin && (
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            onClick={() => handleDeleteClient(client.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           )}
