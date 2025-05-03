@@ -43,6 +43,54 @@ interface AgentWorkload {
   daily: number
 }
 
+// Add these animation styles right after the AgentWorkload interface
+const blinkAnimation = {
+  "@keyframes blink": {
+    "0%, 100%": { opacity: 1 },
+    "50%": { opacity: 0.8 },
+  },
+  animation: "blink 2.5s ease-in-out infinite",
+}
+
+const pulseGlow = {
+  "@keyframes pulseGlow": {
+    "0%": { boxShadow: "0 0 15px rgba(255, 215, 0, 0.7)" },
+    "50%": { boxShadow: "0 0 25px rgba(255, 215, 0, 0.9)" },
+    "100%": { boxShadow: "0 0 15px rgba(255, 215, 0, 0.7)" },
+  },
+  animation: "pulseGlow 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+}
+
+const shimmer = {
+  "@keyframes shimmer": {
+    "0%": { backgroundPosition: "0% 50%" },
+    "50%": { backgroundPosition: "100% 50%" },
+    "100%": { backgroundPosition: "0% 50%" },
+  },
+  animation: "shimmer 4s ease infinite",
+  backgroundSize: "200% 200%",
+}
+
+const firework = {
+  "@keyframes firework": {
+    "0%": { transform: "translate(var(--x), var(--initialY))", width: "var(--initialSize)", opacity: 1 },
+    "50%": { width: "0.5vmin", opacity: 1 },
+    "100%": { width: "var(--finalSize)", opacity: 0 },
+  },
+  animation: "firework var(--duration) cubic-bezier(0.22, 1, 0.36, 1) infinite",
+}
+
+const confetti = {
+  "@keyframes confetti": {
+    "0%": { transform: "rotateZ(15deg) rotateY(0deg) translate(0, 0)", opacity: 0.8 },
+    "25%": { transform: "rotateZ(5deg) rotateY(360deg) translate(-5vw, 20vh)", opacity: 0.9 },
+    "50%": { transform: "rotateZ(15deg) rotateY(720deg) translate(5vw, 60vh)", opacity: 1 },
+    "75%": { transform: "rotateZ(5deg) rotateY(1080deg) translate(-10vw, 80vh)", opacity: 0.8 },
+    "100%": { transform: "rotateZ(15deg) rotateY(1440deg) translate(10vw, 110vh)", opacity: 0 },
+  },
+  animation: "confetti 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite",
+}
+
 export default function AgentAssignmentDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [clientText, setClientText] = useState("")
@@ -58,6 +106,7 @@ export default function AgentAssignmentDashboard() {
   const [loading, setLoading] = useState(true)
   // Check if current user is an admin based on their email or role
   const [isAdmin, setIsAdmin] = useState(false)
+  const [showApplicationColumn, setShowApplicationColumn] = useState(false)
 
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
   const [uniqueApplications, setUniqueApplications] = useState<string[]>([])
@@ -503,7 +552,6 @@ export default function AgentAssignmentDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete client",
-        variant: "destructive",
       })
     }
   }
@@ -558,7 +606,6 @@ export default function AgentAssignmentDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete selected clients",
-        variant: "destructive",
       })
     }
   }
@@ -655,10 +702,126 @@ export default function AgentAssignmentDashboard() {
             <p className="text-sm text-muted-foreground dark:text-gray-300">Total Clients</p>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm dark:bg-gray-800 dark:text-gray-100">
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold">{topAgentName}</p>
-            <p className="text-sm text-muted-foreground dark:text-gray-300">Top Agent</p>
+
+        <Card
+          className="border-none shadow-sm overflow-hidden relative transform transition-all duration-300 hover:scale-[1.02]"
+          style={{
+            background: "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 25%, #fad0c4 50%, #a18cd1 75%, #fbc2eb 100%)",
+            ...shimmer,
+          }}
+        >
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Fireworks effect */}
+            <div
+              className="firework"
+              style={{
+                position: "absolute",
+                top: "60%",
+                left: "20%",
+                width: "5px",
+                height: "5px",
+                borderRadius: "50%",
+                backgroundColor: "#ffff00",
+                boxShadow: "0 0 10px 5px rgba(255, 255, 0, 0.8)",
+                "--initialY": "60%",
+                "--x": "20%",
+                "--initialSize": "5px",
+                "--finalSize": "50px",
+                "--duration": "2.2s",
+                ...firework,
+              }}
+            ></div>
+            <div
+              className="firework"
+              style={{
+                position: "absolute",
+                top: "30%",
+                left: "70%",
+                width: "4px",
+                height: "4px",
+                borderRadius: "50%",
+                backgroundColor: "#ff4500",
+                boxShadow: "0 0 10px 5px rgba(255, 69, 0, 0.8)",
+                "--initialY": "30%",
+                "--x": "70%",
+                "--initialSize": "4px",
+                "--finalSize": "40px",
+                "--duration": "2.7s",
+                animationDelay: "0.3s",
+                ...firework,
+              }}
+            ></div>
+            <div
+              className="firework"
+              style={{
+                position: "absolute",
+                top: "40%",
+                left: "30%",
+                width: "3px",
+                height: "3px",
+                borderRadius: "50%",
+                backgroundColor: "#00bfff",
+                boxShadow: "0 0 10px 5px rgba(0, 191, 255, 0.8)",
+                "--initialY": "40%",
+                "--x": "30%",
+                "--initialSize": "3px",
+                "--finalSize": "35px",
+                "--duration": "2.5s",
+                animationDelay: "0.7s",
+                ...firework,
+              }}
+            ></div>
+
+            {/* Confetti */}
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  top: `${Math.random() * 20}%`,
+                  left: `${Math.random() * 100}%`,
+                  width: "8px",
+                  height: "16px",
+                  backgroundColor: ["#ffd700", "#ff6347", "#4169e1", "#32cd32", "#9370db"][i % 5],
+                  opacity: 0.8,
+                  borderRadius: "2px",
+                  transformOrigin: "center",
+                  animationDelay: `${i * 0.2}s`,
+                  ...confetti,
+                }}
+              ></div>
+            ))}
+          </div>
+
+          <CardContent className="pt-6 pb-6 text-center relative z-10">
+            <div className="crown-icon mb-2 animate-bounce" style={{ fontSize: "24px" }}>
+              👑
+            </div>
+            <div className="relative inline-block">
+              <p
+                className="text-3xl font-bold text-white drop-shadow-md"
+                style={{
+                  textShadow: "0 0 10px rgba(255,215,0,0.5)",
+                  ...blinkAnimation,
+                }}
+              >
+                {topAgentName}
+              </p>
+              <div
+                className="absolute -inset-1 rounded-lg bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 opacity-75"
+                style={{
+                  filter: "blur(8px)",
+                  zIndex: -1,
+                  ...pulseGlow,
+                }}
+              ></div>
+            </div>
+            <p className="text-sm font-medium text-white mt-2 drop-shadow-md">⭐ TOP AGENT ⭐</p>
+            <div className="mt-2 flex justify-center">
+              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 animate-pulse">
+                #1 Performer
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -804,21 +967,19 @@ export default function AgentAssignmentDashboard() {
             </Select>
           </div>
 
-          <div className="flex items-end gap-2">
+          <div>
+            <label className="text-sm font-medium block mb-1 dark:text-gray-300">Application Column</label>
             <Button
               variant="outline"
-              className="flex-1 border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-100"
-              onClick={resetFilters}
+              size="sm"
+              onClick={() => setShowApplicationColumn(!showApplicationColumn)}
+              className="w-full border-gray-300 focus:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             >
-              Reset Filters
-            </Button>
-            <Button
-              variant="default"
-              className="flex-1 bg-gray-800 hover:bg-gray-700 text-white dark:bg-gray-700 dark:hover:bg-gray-600"
-            >
-              Apply Filters
+              {showApplicationColumn ? "Hide Application" : "Show Application"}
             </Button>
           </div>
+
+          {/* Filter controls removed - filtering happens automatically */}
         </div>
 
         {/* Bulk Actions */}
@@ -871,9 +1032,11 @@ export default function AgentAssignmentDashboard() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Work
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Application
-                  </th>
+                  {showApplicationColumn && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Application
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Assigned Agent
                   </th>
@@ -1012,33 +1175,35 @@ export default function AgentAssignmentDashboard() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
-                        {editingCell.clientId === client.id && editingCell.field === "application" ? (
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              value={editingCell.value}
-                              onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              className="py-1 h-8 text-sm"
-                              autoFocus
-                            />
-                            <div className="flex space-x-1">
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
-                                ✓
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
-                                ✕
-                              </Button>
+                      {showApplicationColumn && (
+                        <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                          {editingCell.clientId === client.id && editingCell.field === "application" ? (
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                value={editingCell.value}
+                                onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                                className="py-1 h-8 text-sm"
+                                autoFocus
+                              />
+                              <div className="flex space-x-1">
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={saveEdit}>
+                                  ✓
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={cancelEdit}>
+                                  ✕
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div
-                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-                            onClick={() => startEdit(client, "application")}
-                          >
-                            {client.application}
-                          </div>
-                        )}
-                      </td>
+                          ) : (
+                            <div
+                              className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
+                              onClick={() => startEdit(client, "application")}
+                            >
+                              {client.application}
+                            </div>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
                         {editingCell.clientId === client.id && editingCell.field === "assignedAgent" ? (
                           <div className="flex items-center space-x-2">
