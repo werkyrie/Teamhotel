@@ -500,14 +500,19 @@ export default function AgentTable() {
               onClick={() => setIsResetModalOpen(true)}
               variant="outline"
               size="sm"
-              className="animate-fade-in bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900"
+              className="animate-fade-in bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200 hover:text-amber-900 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700/70 dark:hover:bg-amber-800/60 transition-all duration-200"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Reset Data
             </Button>
           )}
 
-          <Button onClick={handleExportCsv} variant="outline" size="sm" className="animate-fade-in">
+          <Button
+            onClick={handleExportCsv}
+            variant="outline"
+            size="sm"
+            className="animate-fade-in bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50 dark:hover:bg-emerald-800/40 transition-all duration-200"
+          >
             <FileDown className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -515,7 +520,11 @@ export default function AgentTable() {
           {isAdmin && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="animate-fade-in">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="animate-fade-in bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 hover:text-sky-800 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800/50 dark:hover:bg-sky-800/40 transition-all duration-200"
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Import
                   <ChevronDown className="h-4 w-4 ml-2" />

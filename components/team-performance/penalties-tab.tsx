@@ -327,7 +327,12 @@ export default function PenaltiesTab() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Penalty Records</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50 dark:hover:bg-emerald-800/40 transition-all duration-200"
+            >
               <FileDown className="h-4 w-4 mr-2" />
               Export CSV
             </Button>

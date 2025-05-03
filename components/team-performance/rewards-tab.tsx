@@ -430,13 +430,18 @@ export default function RewardsTab() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowResetModal(true)}
-                  className="flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900"
+                  className="flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200 hover:text-amber-900 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700/70 dark:hover:bg-amber-800/60 transition-all duration-200"
                 >
                   <RefreshCw className="h-4 w-4 mr-1" />
                   Reset Data
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50 dark:hover:bg-emerald-800/40 transition-all duration-200"
+              >
                 <FileDown className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>

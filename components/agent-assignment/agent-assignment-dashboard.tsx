@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Trash2 } from "lucide-react"
+import { Search, Trash2, Calendar, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,6 +35,12 @@ interface ClientAssignment {
   date: string
   createdAt?: any
   updatedAt?: any
+}
+
+// Interface for agent workload stats
+interface AgentWorkload {
+  total: number
+  daily: number
 }
 
 export default function AgentAssignmentDashboard() {
@@ -71,18 +77,41 @@ export default function AgentAssignmentDashboard() {
   const [selectAll, setSelectAll] = useState(false)
 
   // Calculate agent workloads
-  const agentWorkloads = agents.reduce(
-    (acc, agent) => {
-      const agentName = agent.toLowerCase()
-      acc[agentName] = clients.filter((client) => client.assignedAgent.toLowerCase() === agentName).length
-      return acc
-    },
-    {} as Record<string, number>,
-  )
+  const calculateAgentWorkloads = (): Record<string, AgentWorkload> => {
+    const today = new Date().toISOString().split("T")[0] // Format: YYYY-MM-DD
+
+    return agents.reduce(
+      (acc, agent) => {
+        const agentName = agent.toLowerCase()
+        const agentClients = clients.filter((client) => client.assignedAgent.toLowerCase() === agentName)
+
+        // Total clients for this agent
+        const total = agentClients.length
+
+        // Clients added today for this agent
+        const daily = agentClients.filter((client) => client.date === today).length
+
+        acc[agentName] = { total, daily }
+        return acc
+      },
+      {} as Record<string, AgentWorkload>,
+    )
+  }
+
+  const agentWorkloads = calculateAgentWorkloads()
 
   // Find top agent
-  const topAgent = Object.entries(agentWorkloads).sort((a, b) => b[1] - a[1])[0]
-  const topAgentName = topAgent && topAgent[1] > 0 ? agents.find((a) => a.toLowerCase() === topAgent[0]) || "-" : "-"
+  const findTopAgent = (): string => {
+    const workloads = Object.entries(agentWorkloads)
+    if (workloads.length === 0) return "-"
+
+    const sorted = workloads.sort((a, b) => b[1].total - a[1].total)
+    if (sorted[0][1].total === 0) return "-"
+
+    return agents.find((a) => a.toLowerCase() === sorted[0][0]) || "-"
+  }
+
+  const topAgentName = findTopAgent()
 
   // Apply filters and search
   useEffect(() => {
@@ -639,19 +668,60 @@ export default function AgentAssignmentDashboard() {
         <h2 className="text-xl font-semibold mb-4 border-b pb-2 dark:text-gray-100 dark:border-gray-700">
           Agent Workload
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-11 gap-2">
-          {agents.map((agent) => (
-            <Card key={agent} className="overflow-hidden border-none shadow-sm dark:bg-gray-800">
-              <CardContent className="p-4 text-center">
-                <p className="font-medium text-sm mb-1 dark:text-gray-300">{agent}</p>
-                <p
-                  className={`text-2xl font-bold ${(agentWorkloads[agent.toLowerCase()] || 0) % 4 === 0 && (agentWorkloads[agent.toLowerCase()] || 0) > 0 ? "text-red-500 dark:text-red-400" : "dark:text-gray-100"}`}
-                >
-                  {agentWorkloads[agent.toLowerCase()] || 0}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+
+        {/* Legend */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4 text-blue-500" />
+              <span className="text-gray-600 dark:text-gray-300">Daily Added</span>
+            </div>
+            <div className="flex items-center gap-1 ml-4">
+              <Users className="h-4 w-4 text-gray-500" />
+              <span className="text-gray-600 dark:text-gray-300">Total Clients</span>
+            </div>
+            <div className="flex items-center gap-1 ml-4">
+              <div className="h-3 w-3 bg-red-500 rounded-full"></div>
+              <span className="text-gray-600 dark:text-gray-300">Divisible by 4</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4">
+          {agents.map((agent) => {
+            const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
+            const isTotal4Divisible = workload.total % 4 === 0 && workload.total > 0
+
+            return (
+              <Card key={agent} className="overflow-hidden border-none shadow-sm dark:bg-gray-800">
+                <CardContent className="p-4">
+                  <p className="font-medium text-base mb-3 text-center dark:text-gray-300">{agent}</p>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-blue-500 mr-2" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Daily:</span>
+                      </div>
+                      <span className="font-semibold text-lg">{workload.daily}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 text-gray-500 mr-2" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Total:</span>
+                      </div>
+                      <span
+                        className={`font-semibold text-lg ${isTotal4Divisible ? "text-red-500 dark:text-red-400" : ""}`}
+                      >
+                        {workload.total}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </div>
 

@@ -4,15 +4,35 @@ import { useState } from "react"
 import { useAuth } from "@/context/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import TeamHeroDashboard from "@/components/team-performance/team-hero-dashboard"
 import AgentTable from "@/components/team-performance/agent-table"
 import PenaltiesTab from "@/components/team-performance/penalties-tab"
 import RewardsTab from "@/components/team-performance/rewards-tab"
 import AttendanceTab from "@/components/team-performance/attendance-tab"
-import { Users, AlertTriangle, Award, Calendar } from "lucide-react"
+import AgentWorkloadPreview from "@/components/team-performance/agent-workload-preview"
+import { Users, AlertTriangle, Award, Calendar, BarChart } from "lucide-react"
+
+// Add this CSS for the animations
+const shimmerAnimation = {
+  "@keyframes shimmer": {
+    "0%": { transform: "translateX(-100%)" },
+    "100%": { transform: "translateX(100%)" },
+  },
+  animation: "shimmer 2s infinite",
+}
+
+const pulseSlow = {
+  "@keyframes pulseSlow": {
+    "0%, 100%": { opacity: 1 },
+    "50%": { opacity: 0.8 },
+  },
+  animation: "pulseSlow 3s ease-in-out infinite",
+}
 
 export default function TeamPerformancePage() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [showWorkloadPreview, setShowWorkloadPreview] = useState(false)
   const { isViewer } = useAuth()
 
   return (
@@ -38,11 +58,24 @@ export default function TeamPerformancePage() {
       {/* Enhanced card with improved visual hierarchy */}
       <Card className="shadow-md border-t-4 border-t-primary animate-fade-in overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 rounded-t-lg">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Agent Performance Management
-          </CardTitle>
-          <CardDescription>Track and manage agent performance metrics across multiple dimensions</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Agent Performance Management
+              </CardTitle>
+              <CardDescription>Track and manage agent performance metrics across multiple dimensions</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-primary/50 bg-primary/5 text-primary hover:bg-primary/10 relative overflow-hidden shadow-[0_0_10px_rgba(59,130,246,0.5)] dark:shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-pulse-slow dark:border-primary/70 dark:text-white dark:bg-primary/20 dark:hover:bg-primary/30 transition-all duration-300 hover:scale-105"
+              onClick={() => setShowWorkloadPreview(true)}
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0 animate-shimmer"></span>
+              <BarChart className="h-4 w-4" />
+              Added Preview
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -95,6 +128,9 @@ export default function TeamPerformancePage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Agent Workload Preview Modal */}
+      <AgentWorkloadPreview open={showWorkloadPreview} onOpenChange={setShowWorkloadPreview} />
     </div>
   )
 }
