@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Trash2, Calendar, Users } from "lucide-react"
+import { Search, Trash2, Calendar, Users, Trophy, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -43,52 +43,124 @@ interface AgentWorkload {
   daily: number
 }
 
-// Add these animation styles right after the AgentWorkload interface
-const blinkAnimation = {
-  "@keyframes blink": {
-    "0%, 100%": { opacity: 1 },
-    "50%": { opacity: 0.8 },
-  },
-  animation: "blink 2.5s ease-in-out infinite",
+// Floating particles component for the Top Agent card
+const FloatingParticles = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: 15 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute animate-float"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${3 + Math.random() * 7}s`,
+          }}
+        >
+          <Sparkles className="h-3 w-3 text-yellow-400 opacity-70" />
+        </div>
+      ))}
+    </div>
+  )
 }
 
-const pulseGlow = {
-  "@keyframes pulseGlow": {
-    "0%": { boxShadow: "0 0 15px rgba(255, 215, 0, 0.7)" },
-    "50%": { boxShadow: "0 0 25px rgba(255, 215, 0, 0.9)" },
-    "100%": { boxShadow: "0 0 15px rgba(255, 215, 0, 0.7)" },
-  },
-  animation: "pulseGlow 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
-}
+// Confetti animation component
+const ConfettiAnimation = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-const shimmer = {
-  "@keyframes shimmer": {
-    "0%": { backgroundPosition: "0% 50%" },
-    "50%": { backgroundPosition: "100% 50%" },
-    "100%": { backgroundPosition: "0% 50%" },
-  },
-  animation: "shimmer 4s ease infinite",
-  backgroundSize: "200% 200%",
-}
+  useEffect(() => {
+    if (!canvasRef.current) return
 
-const firework = {
-  "@keyframes firework": {
-    "0%": { transform: "translate(var(--x), var(--initialY))", width: "var(--initialSize)", opacity: 1 },
-    "50%": { width: "0.5vmin", opacity: 1 },
-    "100%": { width: "var(--finalSize)", opacity: 0 },
-  },
-  animation: "firework var(--duration) cubic-bezier(0.22, 1, 0.36, 1) infinite",
-}
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
-const confetti = {
-  "@keyframes confetti": {
-    "0%": { transform: "rotateZ(15deg) rotateY(0deg) translate(0, 0)", opacity: 0.8 },
-    "25%": { transform: "rotateZ(5deg) rotateY(360deg) translate(-5vw, 20vh)", opacity: 0.9 },
-    "50%": { transform: "rotateZ(15deg) rotateY(720deg) translate(5vw, 60vh)", opacity: 1 },
-    "75%": { transform: "rotateZ(5deg) rotateY(1080deg) translate(-10vw, 80vh)", opacity: 0.8 },
-    "100%": { transform: "rotateZ(15deg) rotateY(1440deg) translate(10vw, 110vh)", opacity: 0 },
-  },
-  animation: "confetti 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite",
+    // Set canvas dimensions
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+
+    // Confetti particles
+    const particles: any[] = []
+    const particleCount = 100
+    const gravity = 0.3
+    const colors = [
+      "#f44336",
+      "#e91e63",
+      "#9c27b0",
+      "#673ab7",
+      "#3f51b5",
+      "#2196f3",
+      "#03a9f4",
+      "#00bcd4",
+      "#009688",
+      "#4CAF50",
+      "#8BC34A",
+      "#CDDC39",
+      "#FFEB3B",
+      "#FFC107",
+      "#FF9800",
+      "#FF5722",
+    ]
+
+    // Create particles
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 5 + 1,
+        speed: Math.random() * 2 + 1,
+        angle: Math.random() * 6.28,
+        rotation: Math.random() * 0.2 - 0.1,
+        rotationSpeed: Math.random() * 0.01 - 0.005,
+      })
+    }
+
+    // Animation loop
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i]
+
+        // Update position
+        p.x += Math.sin(p.angle) * p.speed
+        p.y += Math.cos(p.angle) * p.speed + gravity
+        p.angle += p.rotation
+
+        // Draw particle
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Reset if out of bounds
+        if (p.y > canvas.height) {
+          particles[i] = {
+            x: Math.random() * canvas.width,
+            y: -10,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 5 + 1,
+            speed: Math.random() * 2 + 1,
+            angle: Math.random() * 6.28,
+            rotation: Math.random() * 0.2 - 0.1,
+            rotationSpeed: Math.random() * 0.01 - 0.005,
+          }
+        }
+      }
+
+      requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    return () => {
+      // Cleanup if needed
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
 }
 
 export default function AgentAssignmentDashboard() {
@@ -107,6 +179,10 @@ export default function AgentAssignmentDashboard() {
   // Check if current user is an admin based on their email or role
   const [isAdmin, setIsAdmin] = useState(false)
   const [showApplicationColumn, setShowApplicationColumn] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [isCardHovered, setIsCardHovered] = useState(false)
+  const [topAgentTitle, setTopAgentTitle] = useState<string>("TOP PERFORMING AGENT")
+  const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false)
 
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
   const [uniqueApplications, setUniqueApplications] = useState<string[]>([])
@@ -121,6 +197,11 @@ export default function AgentAssignmentDashboard() {
 
   // Calculate dashboard stats
   const totalClients = clients.length
+
+  const [agentWorkloads, setAgentWorkloads] = useState<Record<string, AgentWorkload>>({})
+
+  // Calculate total daily clients
+  const totalDailyClients = Object.values(agentWorkloads).reduce((sum, agent) => sum + agent.daily, 0)
 
   const [selectedClients, setSelectedClients] = useState<string[]>([])
   const [selectAll, setSelectAll] = useState(false)
@@ -147,8 +228,6 @@ export default function AgentAssignmentDashboard() {
     )
   }
 
-  const agentWorkloads = calculateAgentWorkloads()
-
   // Find top agent
   const findTopAgent = (): string => {
     const workloads = Object.entries(agentWorkloads)
@@ -161,6 +240,28 @@ export default function AgentAssignmentDashboard() {
   }
 
   const topAgentName = findTopAgent()
+
+  // Get top agent's stats
+  const getTopAgentStats = (): { total: number; daily: number } => {
+    const topAgentLower = topAgentName.toLowerCase()
+    return agentWorkloads[topAgentLower] || { total: 0, daily: 0 }
+  }
+
+  const topAgentStats = getTopAgentStats()
+
+  useEffect(() => {
+    setAgentWorkloads(calculateAgentWorkloads())
+  }, [clients])
+
+  // Trigger confetti animation when component mounts
+  useEffect(() => {
+    // Short delay to ensure the card is rendered
+    const timer = setTimeout(() => {
+      setShowConfetti(true)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   // Apply filters and search
   useEffect(() => {
@@ -552,6 +653,7 @@ export default function AgentAssignmentDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete client",
+        variant: "destructive",
       })
     }
   }
@@ -606,6 +708,7 @@ export default function AgentAssignmentDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete selected clients",
+        variant: "destructive",
       })
     }
   }
@@ -702,127 +805,119 @@ export default function AgentAssignmentDashboard() {
             <p className="text-sm text-muted-foreground dark:text-gray-300">Total Clients</p>
           </CardContent>
         </Card>
+        <Card className="border-none shadow-sm dark:bg-gray-800 dark:text-gray-100">
+          <CardContent className="pt-6 text-center">
+            <p className="text-3xl font-bold">{totalDailyClients}</p>
+            <p className="text-sm text-muted-foreground dark:text-gray-300">Total Daily Clients</p>
+          </CardContent>
+        </Card>
+      </div>
 
-        <Card
-          className="border-none shadow-sm overflow-hidden relative transform transition-all duration-300 hover:scale-[1.02]"
-          style={{
-            background: "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 25%, #fad0c4 50%, #a18cd1 75%, #fbc2eb 100%)",
-            ...shimmer,
-          }}
-        >
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Fireworks effect */}
-            <div
-              className="firework"
-              style={{
-                position: "absolute",
-                top: "60%",
-                left: "20%",
-                width: "5px",
-                height: "5px",
-                borderRadius: "50%",
-                backgroundColor: "#ffff00",
-                boxShadow: "0 0 10px 5px rgba(255, 255, 0, 0.8)",
-                "--initialY": "60%",
-                "--x": "20%",
-                "--initialSize": "5px",
-                "--finalSize": "50px",
-                "--duration": "2.2s",
-                ...firework,
-              }}
-            ></div>
-            <div
-              className="firework"
-              style={{
-                position: "absolute",
-                top: "30%",
-                left: "70%",
-                width: "4px",
-                height: "4px",
-                borderRadius: "50%",
-                backgroundColor: "#ff4500",
-                boxShadow: "0 0 10px 5px rgba(255, 69, 0, 0.8)",
-                "--initialY": "30%",
-                "--x": "70%",
-                "--initialSize": "4px",
-                "--finalSize": "40px",
-                "--duration": "2.7s",
-                animationDelay: "0.3s",
-                ...firework,
-              }}
-            ></div>
-            <div
-              className="firework"
-              style={{
-                position: "absolute",
-                top: "40%",
-                left: "30%",
-                width: "3px",
-                height: "3px",
-                borderRadius: "50%",
-                backgroundColor: "#00bfff",
-                boxShadow: "0 0 10px 5px rgba(0, 191, 255, 0.8)",
-                "--initialY": "40%",
-                "--x": "30%",
-                "--initialSize": "3px",
-                "--finalSize": "35px",
-                "--duration": "2.5s",
-                animationDelay: "0.7s",
-                ...firework,
-              }}
-            ></div>
+      {/* Top Agent Card - Redesigned */}
+      <div
+        className={`relative overflow-hidden transition-all duration-300 ${isCardHovered ? "transform scale-105" : ""}`}
+        onMouseEnter={() => setIsCardHovered(true)}
+        onMouseLeave={() => setIsCardHovered(false)}
+      >
+        {/* Animated confetti */}
+        {showConfetti && <ConfettiAnimation />}
 
-            {/* Confetti */}
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  top: `${Math.random() * 20}%`,
-                  left: `${Math.random() * 100}%`,
-                  width: "8px",
-                  height: "16px",
-                  backgroundColor: ["#ffd700", "#ff6347", "#4169e1", "#32cd32", "#9370db"][i % 5],
-                  opacity: 0.8,
-                  borderRadius: "2px",
-                  transformOrigin: "center",
-                  animationDelay: `${i * 0.2}s`,
-                  ...confetti,
-                }}
-              ></div>
-            ))}
+        {/* Floating particles */}
+        <FloatingParticles />
+
+        <Card className="border-none shadow-lg relative bg-gradient-to-r from-gray-50 to-yellow-50 dark:from-gray-800 dark:to-gray-700 overflow-hidden">
+          {/* Ribbon banner */}
+          <div className="absolute -left-8 top-5 bg-red-600 text-white py-1 px-10 transform -rotate-45 shadow-md z-20">
+            <span className="font-bold text-xs">CHAMPION</span>
           </div>
 
-          <CardContent className="pt-6 pb-6 text-center relative z-10">
-            <div className="crown-icon mb-2 animate-bounce" style={{ fontSize: "24px" }}>
-              👑
+          {/* Number 1 badge */}
+          <div className="absolute top-3 right-3 bg-yellow-500 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg z-20 animate-pulse-slow">
+            <span className="font-bold text-lg">#1</span>
+          </div>
+
+          <CardContent className="py-10 text-center relative z-10">
+            {/* Trophy icon */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <Trophy className="h-12 w-12 text-yellow-500 animate-float-slow" />
+                <div className="absolute inset-0 bg-yellow-400 blur-md opacity-30 rounded-full animate-pulse-slow"></div>
+              </div>
             </div>
-            <div className="relative inline-block">
-              <p
-                className="text-3xl font-bold text-white drop-shadow-md"
-                style={{
-                  textShadow: "0 0 10px rgba(255,215,0,0.5)",
-                  ...blinkAnimation,
-                }}
-              >
-                {topAgentName}
-              </p>
-              <div
-                className="absolute -inset-1 rounded-lg bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 opacity-75"
-                style={{
-                  filter: "blur(8px)",
-                  zIndex: -1,
-                  ...pulseGlow,
-                }}
-              ></div>
+
+            {/* Agent name with effects */}
+            <div className="relative">
+              <p className="text-4xl font-extrabold uppercase mb-2 text-yellow-600">{topAgentName}</p>
             </div>
-            <p className="text-sm font-medium text-white mt-2 drop-shadow-md">⭐ TOP AGENT ⭐</p>
-            <div className="mt-2 flex justify-center">
-              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 animate-pulse">
-                #1 Performer
-              </span>
+
+            {isEditingTitle ? (
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <Input
+                  value={topAgentTitle}
+                  onChange={(e) => setTopAgentTitle(e.target.value)}
+                  className="h-8 text-sm w-48 text-center"
+                  autoFocus
+                />
+                <div className="flex space-x-1">
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setIsEditingTitle(false)}>
+                    ✓
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={() => {
+                      setTopAgentTitle("TOP PERFORMING AGENT")
+                      setIsEditingTitle(false)
+                    }}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative mt-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{topAgentTitle}</p>
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -right-8 top-1/2 transform -translate-y-1/2 h-6 w-6 opacity-50 hover:opacity-100"
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                    </svg>
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Stats */}
+            <div className="mt-4 flex justify-center gap-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{topAgentStats.total}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">TOTAL CLIENTS</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{topAgentStats.daily}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">DAILY CLIENTS</p>
+              </div>
             </div>
           </CardContent>
+
+          {/* Shimmer border effect */}
+          <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-transparent via-yellow-300 to-transparent bg-[length:200%_100%] animate-border-shimmer pointer-events-none"></div>
         </Card>
       </div>
 
@@ -843,48 +938,75 @@ export default function AgentAssignmentDashboard() {
               <Users className="h-4 w-4 text-gray-500" />
               <span className="text-gray-600 dark:text-gray-300">Total Clients</span>
             </div>
-            <div className="flex items-center gap-1 ml-4">
-              <div className="h-3 w-3 bg-red-500 rounded-full"></div>
-              <span className="text-gray-600 dark:text-gray-300">Divisible by 4</span>
-            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4">
-          {agents.map((agent) => {
-            const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
-            const isTotal4Divisible = workload.total % 4 === 0 && workload.total > 0
+        <div className="space-y-4">
+          {/* First row of agents */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {agents.slice(0, Math.ceil(agents.length / 2)).map((agent) => {
+              const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
 
-            return (
-              <Card key={agent} className="overflow-hidden border-none shadow-sm dark:bg-gray-800">
-                <CardContent className="p-4">
-                  <p className="font-medium text-base mb-3 text-center dark:text-gray-300">{agent}</p>
+              return (
+                <Card key={agent} className="overflow-hidden border-none shadow-sm dark:bg-gray-800">
+                  <CardContent className="p-4">
+                    <p className="font-medium text-base mb-3 text-center dark:text-gray-300">{agent}</p>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-blue-500 mr-2" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Daily:</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 text-blue-500 mr-2" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Daily:</span>
+                        </div>
+                        <span className="font-semibold text-lg">{workload.daily}</span>
                       </div>
-                      <span className="font-semibold text-lg">{workload.daily}</span>
-                    </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 text-gray-500 mr-2" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Total:</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 text-gray-500 mr-2" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Total:</span>
+                        </div>
+                        <span className="font-semibold text-lg">{workload.total}</span>
                       </div>
-                      <span
-                        className={`font-semibold text-lg ${isTotal4Divisible ? "text-red-500 dark:text-red-400" : ""}`}
-                      >
-                        {workload.total}
-                      </span>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* Second row of agents */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {agents.slice(Math.ceil(agents.length / 2)).map((agent) => {
+              const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
+
+              return (
+                <Card key={agent} className="overflow-hidden border-none shadow-sm dark:bg-gray-800">
+                  <CardContent className="p-4">
+                    <p className="font-medium text-base mb-3 text-center dark:text-gray-300">{agent}</p>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 text-blue-500 mr-2" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Daily:</span>
+                        </div>
+                        <span className="font-semibold text-lg">{workload.daily}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 text-gray-500 mr-2" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Total:</span>
+                        </div>
+                        <span className="font-semibold text-lg">{workload.total}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -979,7 +1101,21 @@ export default function AgentAssignmentDashboard() {
             </Button>
           </div>
 
-          {/* Filter controls removed - filtering happens automatically */}
+          <div className="flex items-end gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-100"
+              onClick={resetFilters}
+            >
+              Reset Filters
+            </Button>
+            <Button
+              variant="default"
+              className="flex-1 bg-gray-800 hover:bg-gray-700 text-white dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              Apply Filters
+            </Button>
+          </div>
         </div>
 
         {/* Bulk Actions */}
