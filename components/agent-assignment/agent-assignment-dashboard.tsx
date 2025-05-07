@@ -482,15 +482,32 @@ export default function AgentAssignmentDashboard() {
       }
 
       // Check for duplicate entries
-      const isDuplicate = clients.some((client) => client.name.toLowerCase() === name.toLowerCase())
+      const isDuplicate = clients.some(
+        (client) =>
+          client.name.toLowerCase() === name.toLowerCase() &&
+          client.age === age &&
+          client.location.toLowerCase() === (location || "Unknown").toLowerCase() &&
+          client.work.toLowerCase() === (work || "Unknown").toLowerCase() &&
+          client.application.toLowerCase() === (application || "Unknown").toLowerCase(),
+      )
 
       if (isDuplicate) {
         toast({
           title: "Duplicate Entry",
-          description: `A client with the name "${name}" already exists`,
+          description: `An identical client record already exists`,
           variant: "destructive",
         })
         return
+      }
+
+      // If just the name matches, show a warning but allow to proceed
+      const nameMatch = clients.some((client) => client.name.toLowerCase() === name.toLowerCase())
+      if (nameMatch) {
+        toast({
+          title: "Similar Name Found",
+          description: `A client with the name "${name}" already exists, but other details differ. Adding as a new record.`,
+          variant: "warning",
+        })
       }
 
       // Create new client with default values for optional fields
