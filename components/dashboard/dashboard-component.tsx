@@ -622,43 +622,115 @@ export default function DashboardComponent() {
               </CardHeader>
               <CardContent className="pt-4">
                 {topAgents.length > 0 ? (
-                  <div className="space-y-4">
-                    {topAgents.map((agent, index) => (
-                      <div key={agent.agent} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="relative">
-                              <Avatar className="h-8 w-8 border-2 border-background">
-                                <AvatarFallback className={getAgentColor(agent.agent)}>
-                                  {agent.agent.substring(0, 2)}
-                                </AvatarFallback>
-                              </Avatar>
-                              {index < 3 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background">
-                                  <span
-                                    className={`text-[10px] font-bold ${
-                                      index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-amber-700"
-                                    }`}
-                                  >
-                                    {index + 1}
-                                  </span>
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{agent.agent}</p>
-                              <p className="text-xs text-muted-foreground">{agent.clientCount} clients</p>
+                  <div className="space-y-6">
+                    {/* Championship Podium for Top 3 */}
+                    {topAgents.length >= 3 && (
+                      <div className="relative h-64 flex items-end justify-center mb-8">
+                        {/* Second Place */}
+                        <div className="absolute bottom-0 left-0 md:left-8 w-1/3 max-w-[100px] flex flex-col items-center">
+                          <div className="relative mb-2 group">
+                            <div className="absolute inset-0 rounded-full bg-gray-300 blur-md opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                            <Avatar className="h-16 w-16 border-4 border-gray-300 shadow-lg relative z-10 group-hover:scale-105 transition-transform">
+                              <AvatarFallback className={getAgentColor(topAgents[1].agent)}>
+                                {topAgents[1].agent.substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-gray-300 border-2 border-white shadow-md z-20">
+                              <span className="text-sm font-bold text-gray-700">2</span>
                             </div>
                           </div>
-                          <p className="text-sm font-semibold">{formatCurrency(agent.value)}</p>
+                          <div className="h-24 w-full bg-gradient-to-t from-gray-300 to-gray-200 rounded-t-lg shadow-md flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="font-bold text-xs truncate max-w-[90px]">{topAgents[1].agent}</p>
+                              <p className="text-xs text-gray-600">{formatCurrency(topAgents[1].value)}</p>
+                            </div>
+                          </div>
                         </div>
-                        <Progress
-                          value={agent.percentage}
-                          className="h-2 bg-slate-100 dark:bg-slate-800"
-                          indicatorClassName={`${index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-amber-700" : "bg-blue-500"}`}
-                        />
+
+                        {/* First Place - Champion */}
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/3 max-w-[120px] flex flex-col items-center z-20">
+                          <div className="relative mb-2 group animate-pulse">
+                            <div className="absolute inset-0 rounded-full bg-yellow-400 blur-lg opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                              <Trophy className="h-8 w-8 text-yellow-500 drop-shadow-lg" />
+                            </div>
+                            <Avatar className="h-20 w-20 border-4 border-yellow-400 shadow-xl relative z-10 group-hover:scale-110 transition-transform">
+                              <AvatarFallback className={getAgentColor(topAgents[0].agent)}>
+                                {topAgents[0].agent.substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 border-2 border-white shadow-md z-20">
+                              <span className="text-sm font-bold text-yellow-800">1</span>
+                            </div>
+                            <div className="absolute -inset-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-20 transition-opacity z-0"></div>
+                          </div>
+                          <div className="h-36 w-full bg-gradient-to-t from-yellow-400 to-yellow-300 rounded-t-lg shadow-lg flex items-center justify-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:8px_8px] opacity-30"></div>
+                            <div className="text-center z-10">
+                              <p className="font-bold text-sm truncate max-w-[100px]">{topAgents[0].agent}</p>
+                              <p className="text-xs text-yellow-800">{formatCurrency(topAgents[0].value)}</p>
+                              <p className="text-xs mt-1 bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full inline-block">
+                                Champion
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Third Place */}
+                        <div className="absolute bottom-0 right-0 md:right-8 w-1/3 max-w-[100px] flex flex-col items-center">
+                          <div className="relative mb-2 group">
+                            <div className="absolute inset-0 rounded-full bg-amber-700 blur-md opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                            <Avatar className="h-14 w-14 border-4 border-amber-700 shadow-lg relative z-10 group-hover:scale-105 transition-transform">
+                              <AvatarFallback className={getAgentColor(topAgents[2].agent)}>
+                                {topAgents[2].agent.substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 border-2 border-white shadow-md z-20">
+                              <span className="text-xs font-bold text-amber-100">3</span>
+                            </div>
+                          </div>
+                          <div className="h-16 w-full bg-gradient-to-t from-amber-700 to-amber-600 rounded-t-lg shadow-md flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="font-bold text-xs text-white truncate max-w-[90px]">{topAgents[2].agent}</p>
+                              <p className="text-xs text-amber-200">{formatCurrency(topAgents[2].value)}</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Remaining Top Performers */}
+                    <div className="space-y-3 mt-4">
+                      <h4 className="text-sm font-medium text-muted-foreground">Other Top Performers</h4>
+                      {topAgents.slice(3).map((agent, index) => (
+                        <div key={agent.agent} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="relative">
+                                <Avatar className="h-8 w-8 border-2 border-background">
+                                  <AvatarFallback className={getAgentColor(agent.agent)}>
+                                    {agent.agent.substring(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background">
+                                  <span className="text-[10px] font-bold text-slate-500">{index + 4}</span>
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">{agent.agent}</p>
+                                <p className="text-xs text-muted-foreground">{agent.clientCount} clients</p>
+                              </div>
+                            </div>
+                            <p className="text-sm font-semibold">{formatCurrency(agent.value)}</p>
+                          </div>
+                          <Progress
+                            value={agent.percentage}
+                            className="h-2 bg-slate-100 dark:bg-slate-800"
+                            indicatorClassName="bg-blue-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="py-8 text-center text-muted-foreground">

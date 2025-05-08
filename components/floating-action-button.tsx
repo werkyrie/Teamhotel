@@ -7,6 +7,21 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+// Add after the imports
+const pulseKeyframes = `
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+`
+
 export default function FloatingActionButton() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -114,101 +129,111 @@ export default function FloatingActionButton() {
   }
 
   return (
-    <TooltipProvider>
-      <div ref={containerRef} className="floating-action-button-container fixed bottom-6 right-6 z-50">
-        {/* Action Items */}
-        {actionItems.map((item) => (
-          <Tooltip key={item.id} open={activeTooltip === item.id}>
+    <>
+      {/* Add right before the TooltipProvider */}
+      <style dangerouslySetInnerHTML={{ __html: pulseKeyframes }} />
+      <TooltipProvider>
+        <div ref={containerRef} className="floating-action-button-container fixed bottom-6 right-6 z-50">
+          {/* Action Items */}
+          {actionItems.map((item) => (
+            <Tooltip key={item.id} open={activeTooltip === item.id}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={item.onClick}
+                  onMouseEnter={() => !isMobile && isExpanded && setActiveTooltip(item.id)}
+                  onMouseLeave={() => setActiveTooltip(null)}
+                  className={cn(
+                    "absolute bottom-0 right-0 flex items-center justify-center transition-all duration-300 ease-in-out",
+                    isExpanded
+                      ? isMobile
+                        ? item.mobilePosition
+                        : item.position
+                      : "translate-y-0 opacity-0 pointer-events-none",
+                    "hover:scale-105 active:scale-95",
+                    "focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50",
+                    isExpanded ? "w-auto min-w-[14rem] pl-4 pr-5 rounded-full shadow-lg" : "w-14 h-14 rounded-full",
+                    item.color,
+                  )}
+                  aria-label={item.label}
+                >
+                  <div className={cn("flex items-center", isExpanded ? "justify-start w-full" : "justify-center")}>
+                    <div
+                      className={cn(
+                        "flex items-center justify-center",
+                        isExpanded ? "h-10 w-10 rounded-full bg-white bg-opacity-20" : "",
+                      )}
+                    >
+                      {item.icon}
+                    </div>
+                    {isExpanded && <span className="ml-3 font-medium text-white whitespace-nowrap">{item.label}</span>}
+                  </div>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-[200px]">
+                <p className="text-xs">{item.description}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+
+          {/* Main FAB Button */}
+          <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={item.onClick}
-                onMouseEnter={() => !isMobile && isExpanded && setActiveTooltip(item.id)}
-                onMouseLeave={() => setActiveTooltip(null)}
+                onClick={toggleExpand}
                 className={cn(
-                  "absolute bottom-0 right-0 flex items-center justify-center transition-all duration-300 ease-in-out",
-                  isExpanded
-                    ? isMobile
-                      ? item.mobilePosition
-                      : item.position
-                    : "translate-y-0 opacity-0 pointer-events-none",
-                  "hover:scale-105 active:scale-95",
+                  "flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-2xl transition-all duration-300 hover:from-blue-700 hover:to-purple-700",
+                  "hover:scale-110 active:scale-95",
                   "focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50",
-                  isExpanded ? "w-auto min-w-[14rem] pl-4 pr-5 rounded-full shadow-lg" : "w-14 h-14 rounded-full",
-                  item.color,
+                  "border-2 border-white border-opacity-20",
+                  "animate-pulse-subtle",
+                  isExpanded ? "rotate-45 transform h-18 w-18" : "h-18 w-18",
                 )}
-                aria-label={item.label}
+                style={{
+                  boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
+                  animation: "pulse 2s infinite",
+                }}
+                aria-label={isExpanded ? "Close actions menu" : "Open actions menu"}
               >
-                <div className={cn("flex items-center", isExpanded ? "justify-start w-full" : "justify-center")}>
-                  <div
-                    className={cn(
-                      "flex items-center justify-center",
-                      isExpanded ? "h-10 w-10 rounded-full bg-white bg-opacity-20" : "",
-                    )}
-                  >
-                    {item.icon}
-                  </div>
-                  {isExpanded && <span className="ml-3 font-medium text-white whitespace-nowrap">{item.label}</span>}
-                </div>
+                <Plus className="h-9 w-9 text-white drop-shadow-md" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-[200px]">
-              <p className="text-xs">{item.description}</p>
+            <TooltipContent side="left">
+              <p>{isExpanded ? "Close menu" : "Quick access to common tasks"}</p>
             </TooltipContent>
           </Tooltip>
-        ))}
 
-        {/* Main FAB Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={toggleExpand}
-              className={cn(
-                "flex items-center justify-center rounded-full bg-gray-900 text-white shadow-lg transition-all duration-300 hover:bg-gray-800",
-                "hover:scale-105 active:scale-95",
-                "focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50",
-                isExpanded ? "rotate-45 transform h-16 w-16" : "h-16 w-16",
-              )}
-              aria-label={isExpanded ? "Close actions menu" : "Open actions menu"}
-            >
-              <Plus className="h-8 w-8" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            <p>{isExpanded ? "Close menu" : "Quick access to common tasks"}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Mobile Action Cards - Keeping this for very small screens */}
-        {isMobile && isExpanded && (
-          <div className="absolute bottom-20 right-0 w-64 space-y-2 rounded-lg bg-gray-800 p-3 text-white shadow-lg md:hidden">
-            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Quick Actions
-            </p>
-            {actionItems.map((item) => (
-              <div
-                key={`card-${item.id}`}
-                className="cursor-pointer rounded-lg bg-gray-700 px-4 py-3 transition-all hover:bg-gray-600 active:scale-95"
-                onClick={item.onClick}
-              >
-                <div className="flex items-center">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-full",
-                      item.color.split(" ")[0], // Use just the base color class
-                    )}
-                  >
-                    {item.icon}
-                  </div>
-                  <div className="ml-3">
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-xs text-gray-300">{item.description}</p>
+          {/* Mobile Action Cards - Keeping this for very small screens */}
+          {isMobile && isExpanded && (
+            <div className="absolute bottom-20 right-0 w-64 space-y-2 rounded-lg bg-gray-800 p-3 text-white shadow-lg md:hidden">
+              <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Quick Actions
+              </p>
+              {actionItems.map((item) => (
+                <div
+                  key={`card-${item.id}`}
+                  className="cursor-pointer rounded-lg bg-gray-700 px-4 py-3 transition-all hover:bg-gray-600 active:scale-95"
+                  onClick={item.onClick}
+                >
+                  <div className="flex items-center">
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-full",
+                        item.color.split(" ")[0], // Use just the base color class
+                      )}
+                    >
+                      {item.icon}
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-xs text-gray-300">{item.description}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </TooltipProvider>
+              ))}
+            </div>
+          )}
+        </div>
+      </TooltipProvider>
+    </>
   )
 }

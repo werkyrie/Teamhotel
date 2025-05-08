@@ -505,12 +505,19 @@ export default function AgentAssignmentDashboard() {
       }
 
       // Check for duplicate entries
-      const isDuplicate = clients.some((client) => client.name.toLowerCase() === name.toLowerCase())
+      const isDuplicate = clients.some(
+        (client) =>
+          client.name.toLowerCase() === name.toLowerCase() &&
+          client.age === age &&
+          client.location.toLowerCase() === location.toLowerCase() &&
+          client.work.toLowerCase() === work.toLowerCase() &&
+          client.application.toLowerCase() === application.toLowerCase(),
+      )
 
       if (isDuplicate) {
         toast({
           title: "Duplicate Entry",
-          description: `A client with the name "${name}" already exists`,
+          description: `An identical client entry already exists`,
           variant: "destructive",
         })
         return
