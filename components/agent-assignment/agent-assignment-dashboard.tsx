@@ -183,6 +183,7 @@ export default function AgentAssignmentDashboard() {
   const [isCardHovered, setIsCardHovered] = useState(false)
   const [topAgentTitle, setTopAgentTitle] = useState<string>("TOP PERFORMING AGENT")
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false)
+  const [dateFilter, setDateFilter] = useState<string | null>(null)
 
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
   const [uniqueApplications, setUniqueApplications] = useState<string[]>([])
@@ -215,13 +216,34 @@ export default function AgentAssignmentDashboard() {
         const agentName = agent.toLowerCase()
         const agentClients = clients.filter((client) => client.assignedAgent.toLowerCase() === agentName)
 
-        // Total clients for this agent
-        const total = agentClients.length
+        // If date filter is applied
+        if (dateFilter) {
+          const selectedDate = new Date(dateFilter)
+          // Create first day of the month
+          const firstDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+          const firstDayString = firstDayOfMonth.toISOString().split("T")[0]
 
-        // Clients added today for this agent
-        const daily = agentClients.filter((client) => client.date === today).length
+          // Daily: Only clients added on the exact selected date
+          const clientsOnSelectedDate = agentClients.filter((client) => client.date === dateFilter)
 
-        acc[agentName] = { total, daily }
+          // Total: Clients from first day of month to selected date
+          const clientsInRange = agentClients.filter((client) => {
+            const clientDate = client.date
+            return clientDate >= firstDayString && clientDate <= dateFilter
+          })
+
+          acc[agentName] = {
+            total: clientsInRange.length,
+            daily: clientsOnSelectedDate.length,
+          }
+        } else {
+          // Without date filter, show all-time total and today's clients
+          acc[agentName] = {
+            total: agentClients.length,
+            daily: agentClients.filter((client) => client.date === today).length,
+          }
+        }
+
         return acc
       },
       {} as Record<string, AgentWorkload>,
@@ -249,9 +271,10 @@ export default function AgentAssignmentDashboard() {
 
   const topAgentStats = getTopAgentStats()
 
+  // Update workloads when date filter changes
   useEffect(() => {
     setAgentWorkloads(calculateAgentWorkloads())
-  }, [clients])
+  }, [dateFilter, clients])
 
   // Trigger confetti animation when component mounts
   useEffect(() => {
@@ -482,32 +505,15 @@ export default function AgentAssignmentDashboard() {
       }
 
       // Check for duplicate entries
-      const isDuplicate = clients.some(
-        (client) =>
-          client.name.toLowerCase() === name.toLowerCase() &&
-          client.age === age &&
-          client.location.toLowerCase() === (location || "Unknown").toLowerCase() &&
-          client.work.toLowerCase() === (work || "Unknown").toLowerCase() &&
-          client.application.toLowerCase() === (application || "Unknown").toLowerCase(),
-      )
+      const isDuplicate = clients.some((client) => client.name.toLowerCase() === name.toLowerCase())
 
       if (isDuplicate) {
         toast({
           title: "Duplicate Entry",
-          description: `An identical client record already exists`,
+          description: `A client with the name "${name}" already exists`,
           variant: "destructive",
         })
         return
-      }
-
-      // If just the name matches, show a warning but allow to proceed
-      const nameMatch = clients.some((client) => client.name.toLowerCase() === name.toLowerCase())
-      if (nameMatch) {
-        toast({
-          title: "Similar Name Found",
-          description: `A client with the name "${name}" already exists, but other details differ. Adding as a new record.`,
-          variant: "warning",
-        })
       }
 
       // Create new client with default values for optional fields
@@ -775,6 +781,12 @@ export default function AgentAssignmentDashboard() {
     }
   }, [user])
 
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return `${date.getDate()}/${date.getMonth() + 1}`
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Card */}
@@ -949,12 +961,32 @@ export default function AgentAssignmentDashboard() {
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4 text-blue-500" />
-              <span className="text-gray-600 dark:text-gray-300">Daily Added</span>
+              <span className="text-gray-600 dark:text-gray-300">
+                {dateFilter ? `Clients on ${formatDate(dateFilter)}` : "Daily Added"}
+              </span>
             </div>
             <div className="flex items-center gap-1 ml-4">
               <Users className="h-4 w-4 text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-300">Total Clients</span>
+              <span className="text-gray-600 dark:text-gray-300">
+                {dateFilter ? `From month start to ${formatDate(dateFilter)}` : "Total Clients"}
+              </span>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Input
+                type="date"
+                className="w-40 h-8 text-sm"
+                value={dateFilter || ""}
+                onChange={(e) => setDateFilter(e.target.value || null)}
+              />
+            </div>
+            {dateFilter && (
+              <Button variant="outline" size="sm" onClick={() => setDateFilter(null)} className="h-8 text-xs">
+                Clear Date
+              </Button>
+            )}
           </div>
         </div>
 
