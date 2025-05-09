@@ -8,8 +8,6 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   ArrowRight,
-  ArrowUpRight,
-  Clock,
   Users,
   ShoppingBag,
   CreditCard,
@@ -18,8 +16,6 @@ import {
   DollarSign,
   AlertCircle,
   CheckCircle2,
-  FileText,
-  BarChart3,
   Activity,
   Trophy,
 } from "lucide-react"
@@ -27,13 +23,13 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 import WelcomeHero from "./welcome-hero"
 import DebugDashboard from "./debug-dashboard"
+import { RankBadge, getRankName, getRankTextColor } from "./rank-badges"
+import { RankShowcase } from "./rank-showcase"
 
 export default function DashboardComponent() {
   const router = useRouter()
@@ -45,6 +41,7 @@ export default function DashboardComponent() {
   const [pendingOrderRequests, setPendingOrderRequests] = useState<any[]>([])
   const [selectedMonth, setSelectedMonth] = useState<string>("current")
   const [topAgents, setTopAgents] = useState<any[]>([])
+  const [showRankInfo, setShowRankInfo] = useState(false)
   const [stats, setStats] = useState({
     totalDeposits: 0,
     totalWithdrawals: 0,
@@ -500,96 +497,6 @@ export default function DashboardComponent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left Column (2/3 width) */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Order Requests Card (Admin Only) */}
-          {isAdmin && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-              <Card
-                className={cn(
-                  "overflow-hidden border-2",
-                  pendingOrderRequests.length > 0
-                    ? "border-amber-200 dark:border-amber-800"
-                    : "border-slate-200 dark:border-slate-800",
-                )}
-              >
-                <CardHeader
-                  className={cn(
-                    "pb-2",
-                    pendingOrderRequests.length > 0
-                      ? "bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20"
-                      : "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800",
-                  )}
-                >
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileText
-                        className={cn("h-5 w-5", pendingOrderRequests.length > 0 ? "text-amber-500" : "text-slate-500")}
-                      />
-                      Order Requests
-                    </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => router.push("/?tab=order-requests")}
-                    >
-                      View All <ArrowRight className="ml-1 h-3 w-3" />
-                    </Button>
-                  </div>
-                  <CardDescription>
-                    {pendingOrderRequests.length > 0
-                      ? `You have ${pendingOrderRequests.length} pending order request${pendingOrderRequests.length > 1 ? "s" : ""}`
-                      : "No pending order requests"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  {pendingOrderRequests.length > 0 ? (
-                    <div className="space-y-3">
-                      {pendingOrderRequests.slice(0, 3).map((request) => (
-                        <div
-                          key={request.id}
-                          className="flex items-center justify-between p-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
-                        >
-                          <div className="flex items-start gap-3">
-                            <Clock className="h-5 w-5 text-amber-500 mt-0.5" />
-                            <div>
-                              <p className="font-medium">{request.clientName}</p>
-                              <p className="text-sm text-muted-foreground">{request.shopId}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs bg-amber-100 dark:bg-amber-800/30 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                                  {formatCurrency(request.price)}
-                                </span>
-                                <span className="text-xs text-slate-500">
-                                  {format(new Date(request.date), "MMM d, yyyy")}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button size="sm" onClick={() => router.push(`/?tab=order-requests&view=${request.id}`)}>
-                            Review
-                          </Button>
-                        </div>
-                      ))}
-
-                      {pendingOrderRequests.length > 3 && (
-                        <Button
-                          variant="outline"
-                          className="w-full text-xs"
-                          onClick={() => router.push("/?tab=order-requests")}
-                        >
-                          View all {pendingOrderRequests.length} requests
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <p>No pending order requests to review</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
           {/* Top Agents Card (Moved from right column) */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
             <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
@@ -599,19 +506,29 @@ export default function DashboardComponent() {
                     <Trophy className="h-5 w-5 text-yellow-500" />
                     Top Performing Agents
                   </CardTitle>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-[180px] h-8 text-xs">
-                      <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={globalMonthFilter}>Same as Dashboard</SelectItem>
-                      <SelectItem value="current">Current Month</SelectItem>
-                      <SelectItem value="1">Last Month</SelectItem>
-                      <SelectItem value="2">2 Months Ago</SelectItem>
-                      <SelectItem value="3">3 Months Ago</SelectItem>
-                      <SelectItem value="all">All Time</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8"
+                      onClick={() => setShowRankInfo(!showRankInfo)}
+                    >
+                      {showRankInfo ? "Hide Ranks" : "View Ranks"}
+                    </Button>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger className="w-[180px] h-8 text-xs">
+                        <SelectValue placeholder="Select period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={globalMonthFilter}>Same as Dashboard</SelectItem>
+                        <SelectItem value="current">Current Month</SelectItem>
+                        <SelectItem value="1">Last Month</SelectItem>
+                        <SelectItem value="2">2 Months Ago</SelectItem>
+                        <SelectItem value="3">3 Months Ago</SelectItem>
+                        <SelectItem value="all">All Time</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <CardDescription>
                   Agent performance for{" "}
@@ -621,115 +538,78 @@ export default function DashboardComponent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
-                {topAgents.length > 0 ? (
+                {showRankInfo ? (
+                  <RankShowcase />
+                ) : topAgents.length > 0 ? (
                   <div className="space-y-6">
-                    {/* Championship Podium for Top 3 */}
-                    {topAgents.length >= 3 && (
-                      <div className="relative h-64 flex items-end justify-center mb-8">
-                        {/* Second Place */}
-                        <div className="absolute bottom-0 left-0 md:left-8 w-1/3 max-w-[100px] flex flex-col items-center">
-                          <div className="relative mb-2 group">
-                            <div className="absolute inset-0 rounded-full bg-gray-300 blur-md opacity-50 group-hover:opacity-70 transition-opacity"></div>
-                            <Avatar className="h-16 w-16 border-4 border-gray-300 shadow-lg relative z-10 group-hover:scale-105 transition-transform">
-                              <AvatarFallback className={getAgentColor(topAgents[1].agent)}>
-                                {topAgents[1].agent.substring(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-gray-300 border-2 border-white shadow-md z-20">
-                              <span className="text-sm font-bold text-gray-700">2</span>
-                            </div>
-                          </div>
-                          <div className="h-24 w-full bg-gradient-to-t from-gray-300 to-gray-200 rounded-t-lg shadow-md flex items-center justify-center">
-                            <div className="text-center">
-                              <p className="font-bold text-xs truncate max-w-[90px]">{topAgents[1].agent}</p>
-                              <p className="text-xs text-gray-600">{formatCurrency(topAgents[1].value)}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* First Place - Champion */}
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/3 max-w-[120px] flex flex-col items-center z-20">
-                          <div className="relative mb-2 group animate-pulse">
-                            <div className="absolute inset-0 rounded-full bg-yellow-400 blur-lg opacity-60 group-hover:opacity-80 transition-opacity"></div>
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-                              <Trophy className="h-8 w-8 text-yellow-500 drop-shadow-lg" />
-                            </div>
-                            <Avatar className="h-20 w-20 border-4 border-yellow-400 shadow-xl relative z-10 group-hover:scale-110 transition-transform">
-                              <AvatarFallback className={getAgentColor(topAgents[0].agent)}>
-                                {topAgents[0].agent.substring(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 border-2 border-white shadow-md z-20">
-                              <span className="text-sm font-bold text-yellow-800">1</span>
-                            </div>
-                            <div className="absolute -inset-1 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-20 transition-opacity z-0"></div>
-                          </div>
-                          <div className="h-36 w-full bg-gradient-to-t from-yellow-400 to-yellow-300 rounded-t-lg shadow-lg flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:8px_8px] opacity-30"></div>
-                            <div className="text-center z-10">
-                              <p className="font-bold text-sm truncate max-w-[100px]">{topAgents[0].agent}</p>
-                              <p className="text-xs text-yellow-800">{formatCurrency(topAgents[0].value)}</p>
-                              <p className="text-xs mt-1 bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full inline-block">
-                                Champion
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Third Place */}
-                        <div className="absolute bottom-0 right-0 md:right-8 w-1/3 max-w-[100px] flex flex-col items-center">
-                          <div className="relative mb-2 group">
-                            <div className="absolute inset-0 rounded-full bg-amber-700 blur-md opacity-50 group-hover:opacity-70 transition-opacity"></div>
-                            <Avatar className="h-14 w-14 border-4 border-amber-700 shadow-lg relative z-10 group-hover:scale-105 transition-transform">
-                              <AvatarFallback className={getAgentColor(topAgents[2].agent)}>
-                                {topAgents[2].agent.substring(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 border-2 border-white shadow-md z-20">
-                              <span className="text-xs font-bold text-amber-100">3</span>
-                            </div>
-                          </div>
-                          <div className="h-16 w-full bg-gradient-to-t from-amber-700 to-amber-600 rounded-t-lg shadow-md flex items-center justify-center">
-                            <div className="text-center">
-                              <p className="font-bold text-xs text-white truncate max-w-[90px]">{topAgents[2].agent}</p>
-                              <p className="text-xs text-amber-200">{formatCurrency(topAgents[2].value)}</p>
-                            </div>
-                          </div>
-                        </div>
+                    {/* Top 5 Leaderboard */}
+                    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-card shadow-sm">
+                      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 text-center">
+                        <h3 className="text-white font-bold text-lg tracking-wide">TOP PERFORMERS LEADERBOARD</h3>
                       </div>
-                    )}
+                      <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                        {topAgents.slice(0, 10).map((agent, index) => {
+                          // Get rank based on position
+                          const rank = index + 1
+                          const rankName = getRankName(rank)
+                          const rankTextColor = getRankTextColor(rank)
 
-                    {/* Remaining Top Performers */}
-                    <div className="space-y-3 mt-4">
-                      <h4 className="text-sm font-medium text-muted-foreground">Other Top Performers</h4>
-                      {topAgents.slice(3).map((agent, index) => (
-                        <div key={agent.agent} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="relative">
-                                <Avatar className="h-8 w-8 border-2 border-background">
+                          return (
+                            <div
+                              key={agent.agent}
+                              className="flex items-center p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            >
+                              {/* Rank Badge */}
+                              <RankBadge rank={rank} className="mr-3" />
+
+                              {/* Agent Info */}
+                              <div className="flex flex-1 items-center">
+                                <Avatar className="h-10 w-10 mr-3 border-2 border-white shadow-sm">
                                   <AvatarFallback className={getAgentColor(agent.agent)}>
                                     {agent.agent.substring(0, 2)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-background">
-                                  <span className="text-[10px] font-bold text-slate-500">{index + 4}</span>
-                                </span>
+                                <div>
+                                  <p className={`font-medium ${rankTextColor}`}>{agent.agent}</p>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-muted-foreground">{agent.clientCount} clients</span>
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 ${rankTextColor}`}
+                                    >
+                                      {rankName}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm font-medium">{agent.agent}</p>
-                                <p className="text-xs text-muted-foreground">{agent.clientCount} clients</p>
+
+                              {/* Value/Amount */}
+                              <div className="text-right">
+                                <div className={`font-bold ${rankTextColor}`}>{formatCurrency(agent.value)}</div>
+
+                                {/* Progress bar */}
+                                <div className="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
+                                  <div
+                                    className={`h-full ${
+                                      rank === 1
+                                        ? "bg-gradient-to-r from-purple-500 to-yellow-400"
+                                        : rank === 2
+                                          ? "bg-gradient-to-r from-pink-500 to-yellow-400"
+                                          : rank === 3
+                                            ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                            : rank === 4
+                                              ? "bg-gradient-to-r from-teal-500 to-emerald-400"
+                                              : rank === 5
+                                                ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                                                : "bg-blue-500"
+                                    }`}
+                                    style={{ width: `${agent.percentage}%` }}
+                                  />
+                                </div>
                               </div>
                             </div>
-                            <p className="text-sm font-semibold">{formatCurrency(agent.value)}</p>
-                          </div>
-                          <Progress
-                            value={agent.percentage}
-                            className="h-2 bg-slate-100 dark:bg-slate-800"
-                            indicatorClassName="bg-blue-500"
-                          />
-                        </div>
-                      ))}
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -866,54 +746,6 @@ export default function DashboardComponent() {
 
         {/* Right Column (1/3 width) */}
         <div className="space-y-4">
-          {/* Order Request Status Card (Moved from left column) */}
-          {isAdmin && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
-              <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
-                <CardHeader className="pb-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-slate-500" />
-                    Order Request Status
-                  </CardTitle>
-                  <CardDescription>Overview of all order requests</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4 text-amber-500" />
-                          Pending
-                        </span>
-                        <span className="font-medium">{stats.pendingRequests}</span>
-                      </div>
-                      <Progress
-                        value={
-                          (stats.pendingRequests /
-                            (stats.pendingRequests + stats.approvedRequests + stats.rejectedRequests || 1)) *
-                          100
-                        }
-                        className="h-2 bg-slate-100 dark:bg-slate-800"
-                        indicatorClassName="bg-red-500"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs w-full justify-between"
-                    onClick={() => router.push("/?tab=order-requests")}
-                  >
-                    <span>View all requests</span>
-                    <ArrowRight className="h-3 w-3" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          )}
-
           {/* Calendar Card */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
             <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
@@ -944,7 +776,7 @@ export default function DashboardComponent() {
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="text-xs" onClick={() => router.push("/?tab=orders")}>
-                      <ArrowUpRight className="h-3 w-3" />
+                      <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
 
@@ -966,7 +798,7 @@ export default function DashboardComponent() {
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="text-xs" onClick={() => router.push("/?tab=deposits")}>
-                      <ArrowUpRight className="h-3 w-3" />
+                      <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
 
@@ -993,7 +825,7 @@ export default function DashboardComponent() {
                       className="text-xs"
                       onClick={() => router.push("/?tab=withdrawals")}
                     >
-                      <ArrowUpRight className="h-3 w-3" />
+                      <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>

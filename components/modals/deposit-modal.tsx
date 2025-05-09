@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useClientContext } from "@/context/client-context"
-import type { Deposit, PaymentMode } from "@/types/client"
+import type { Deposit, PaymentMode, Client } from "@/types/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,6 +38,8 @@ export default function DepositModal({ mode, deposit, isOpen, onClose }: Deposit
   const [amount, setAmount] = useState(0)
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("Crypto")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [filteredClients, setFilteredClients] = useState<Client[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Initialize form with deposit data if in edit mode
   useEffect(() => {
@@ -151,15 +153,60 @@ export default function DepositModal({ mode, deposit, isOpen, onClose }: Deposit
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label htmlFor="shopId">Shop ID</Label>
             <Input
               id="shopId"
               value={shopId}
-              onChange={(e) => setShopId(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value
+                setShopId(value)
+
+                // Filter clients based on input
+                if (value.trim()) {
+                  const filtered = clients.filter(
+                    (client) =>
+                      client.shopId.toLowerCase().includes(value.toLowerCase()) ||
+                      client.clientName.toLowerCase().includes(value.toLowerCase()),
+                  )
+                  setFilteredClients(filtered)
+                  setShowSuggestions(filtered.length > 0)
+                } else {
+                  setFilteredClients([])
+                  setShowSuggestions(false)
+                }
+              }}
+              onFocus={() => {
+                if (shopId.trim() && filteredClients.length > 0) {
+                  setShowSuggestions(true)
+                }
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow for clicks
+                setTimeout(() => setShowSuggestions(false), 200)
+              }}
               placeholder="Enter Shop ID"
               disabled={mode === "edit"}
             />
+            {showSuggestions && mode === "add" && (
+              <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-md bg-background border border-border py-1 shadow-lg focus:outline-none">
+                {filteredClients.map((client) => (
+                  <div
+                    key={client.shopId}
+                    className="px-4 py-2 hover:bg-muted cursor-pointer transition-colors"
+                    onClick={() => {
+                      setShopId(client.shopId)
+                      setClientName(client.clientName)
+                      setAgent(client.agent)
+                      setShowSuggestions(false)
+                    }}
+                  >
+                    <div className="font-medium">{client.shopId}</div>
+                    <div className="text-sm text-muted-foreground">{client.clientName}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
