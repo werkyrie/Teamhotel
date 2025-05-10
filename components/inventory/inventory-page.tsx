@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import InventoryTable from "./inventory-table"
-import AddDeviceForm from "./add-device-form"
-import AgentStatistics from "./agent-statistics"
 import type { DeviceInventory, AgentStats } from "@/types/inventory"
 import { db } from "@/lib/firebase"
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
+
+// Lazy load components
+const InventoryTable = lazy(() => import("./inventory-table"))
+const AddDeviceForm = lazy(() => import("./add-device-form"))
+const AgentStatistics = lazy(() => import("./agent-statistics"))
 
 export default function InventoryPage() {
   const [devices, setDevices] = useState<DeviceInventory[]>([])
@@ -21,8 +23,12 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState("inventory")
   const { toast } = useToast()
 
-  // Fetch devices from Firebase
+  // Fetch devices from Firebase only when inventory tab is active
   useEffect(() => {
+    if (activeTab !== "inventory") {
+      return // Don't fetch data if not on inventory tab
+    }
+
     setLoading(true)
     console.log("Fetching inventory data from Firebase...")
 
@@ -64,7 +70,7 @@ export default function InventoryPage() {
       })
       setLoading(false)
     }
-  }, [toast])
+  }, [activeTab, toast])
 
   // Update agent statistics
   const updateAgentStats = (deviceData: DeviceInventory[]) => {
@@ -223,13 +229,21 @@ export default function InventoryPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <InventoryTable
-                  devices={filteredDevices}
-                  onDelete={deleteDevice}
-                  onUpdate={updateDevice}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                />
+                <Suspense
+                  fallback={
+                    <div className="flex h-40 w-full items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  }
+                >
+                  <InventoryTable
+                    devices={filteredDevices}
+                    onDelete={deleteDevice}
+                    onUpdate={updateDevice}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                  />
+                </Suspense>
               )}
             </CardContent>
           </Card>
@@ -241,7 +255,15 @@ export default function InventoryPage() {
               <CardTitle>Add New Device</CardTitle>
             </CardHeader>
             <CardContent>
-              <AddDeviceForm onSubmit={addDevice} agentNames={Object.keys(agentStats)} />
+              <Suspense
+                fallback={
+                  <div className="flex h-40 w-full items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                }
+              >
+                <AddDeviceForm onSubmit={addDevice} agentNames={Object.keys(agentStats)} />
+              </Suspense>
             </CardContent>
           </Card>
         </TabsContent>
@@ -257,7 +279,15 @@ export default function InventoryPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <AgentStatistics agentStats={agentStats} />
+                <Suspense
+                  fallback={
+                    <div className="flex h-40 w-full items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  }
+                >
+                  <AgentStatistics agentStats={agentStats} />
+                </Suspense>
               )}
             </CardContent>
           </Card>

@@ -8,6 +8,7 @@ import { db, auth } from "@/lib/firebase"
 import {
   collection,
   doc,
+  getDoc, // Add this import
   addDoc,
   setDoc,
   deleteDoc,
@@ -59,6 +60,7 @@ interface ClientContextType {
   setWithdrawals: React.Dispatch<React.SetStateAction<Withdrawal[]>>
   addChatMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => Promise<void>
   getChatMessages: (orderRequestId: string) => Promise<ChatMessage[]>
+  loadClientData: (shopId: string) => Promise<Client | undefined>
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined)
@@ -941,6 +943,35 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     [isAuthenticated],
   )
 
+  // Function to load a single client's data on demand
+  const loadClientData = async (shopId: string): Promise<Client | undefined> => {
+    if (!isAuthenticated) {
+      // Fallback to localStorage
+      return clients.find((client) => client.shopId === shopId)
+    }
+
+    try {
+      const clientDoc = await doc(db, "clients", shopId)
+      const clientSnapshot = await getDoc(clientDoc)
+
+      if (clientSnapshot.exists()) {
+        const data = clientSnapshot.data()
+        return {
+          shopId: clientSnapshot.id,
+          clientName: data.clientName,
+          agent: data.agent,
+          kycDate: data.kycDate ? new Date(data.kycDate.seconds * 1000) : undefined,
+          status: data.status,
+          notes: data.notes || "",
+        }
+      }
+      return undefined
+    } catch (error) {
+      console.error("Error loading client data:", error)
+      return undefined
+    }
+  }
+
   const resetAllData = async () => {
     // This function is intentionally left empty as its implementation is not provided.
     // You can add your own logic here to reset all data.
@@ -999,6 +1030,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
         setWithdrawals,
         addChatMessage,
         getChatMessages,
+        loadClientData, // Add the new function
       }}
     >
       {children}

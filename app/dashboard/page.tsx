@@ -4,12 +4,42 @@ import { Suspense, lazy, useEffect, useState } from "react"
 import DashboardSkeleton from "@/components/dashboard/dashboard-skeleton"
 import { useClientContext } from "@/context/client-context"
 
-// Lazy load the dashboard component with a custom loader
-const OptimizedDashboard = lazy(() =>
-  import("@/components/dashboard/optimized-dashboard").then((module) => ({
-    default: module.default,
-  })),
-)
+// Lazy load dashboard components
+const WelcomeHero = lazy(() => import("@/components/dashboard/welcome-hero"))
+const OptimizedStatisticsGrid = lazy(() => import("@/components/dashboard/optimized-statistics-grid"))
+const TopAgentsCard = lazy(() => import("@/components/dashboard/top-agents-card"))
+const AdminOrderRequestsCard = lazy(() => import("@/components/dashboard/admin-order-requests-card"))
+
+// Main dashboard component with lazy loading
+const Dashboard = () => {
+  const { clients, loading } = useClientContext()
+
+  if (loading) {
+    return <DashboardSkeleton />
+  }
+
+  return (
+    <div className="container mx-auto p-4 space-y-6">
+      <Suspense fallback={<div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />}>
+        <WelcomeHero />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />}>
+        <OptimizedStatisticsGrid />
+      </Suspense>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Suspense fallback={<div className="h-80 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />}>
+          <TopAgentsCard />
+        </Suspense>
+
+        <Suspense fallback={<div className="h-80 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />}>
+          <AdminOrderRequestsCard />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const { clients } = useClientContext()
@@ -32,7 +62,6 @@ export default function DashboardPage() {
         () => import("@/components/dashboard/optimized-statistics-grid"),
         () => import("@/components/dashboard/top-agents-card"),
         () => import("@/components/dashboard/admin-order-requests-card"),
-        () => import("@/components/dashboard/dashboard-component"),
       ]
 
       // Use Promise.all to load components in parallel
@@ -57,7 +86,7 @@ export default function DashboardPage() {
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <OptimizedDashboard />
+      <Dashboard />
     </Suspense>
   )
 }

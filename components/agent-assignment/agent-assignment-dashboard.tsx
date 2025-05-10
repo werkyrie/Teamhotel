@@ -1137,7 +1137,7 @@ export default function AgentAssignmentDashboard() {
       <div
         ref={tableContainerRef}
         className={`transition-all duration-500 ease-in-out ${
-          isTableExpanded ? "fixed inset-0 z-50 bg-background p-0 flex flex-col overflow-hidden" : ""
+          isTableExpanded ? "fixed inset-0 z-50 bg-background p-4 flex flex-col overflow-hidden" : ""
         }`}
       >
         <div className={`flex justify-between items-center ${isTableExpanded ? "p-4 pb-2" : "mb-4"}`}>
@@ -1258,7 +1258,7 @@ export default function AgentAssignmentDashboard() {
         {/* Table */}
         <div
           className={`border rounded-md overflow-auto shadow-sm dark:border-gray-700 ${
-            isTableExpanded ? "flex-1 m-4 mt-0" : ""
+            isTableExpanded ? "flex-1 mx-4 mt-0 mb-4" : ""
           }`}
         >
           {loading ? (
@@ -1266,8 +1266,8 @@ export default function AgentAssignmentDashboard() {
               <p>Loading client assignments...</p>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700" style={{ minWidth: "1200px" }}>
-              <thead className="bg-gray-100 dark:bg-gray-800">
+            <table className="w-full divide-y divide-gray-200 dark:divide-gray-700" style={{ minWidth: "1200px" }}>
+              <thead className={`${isTableExpanded ? "bg-gray-800" : "bg-gray-100 dark:bg-gray-800"}`}>
                 <tr>
                   {isAdmin && (
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -1325,7 +1325,9 @@ export default function AgentAssignmentDashboard() {
                   )}
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody
+                className={`${isTableExpanded ? "bg-gray-900" : "bg-white dark:bg-gray-900"} divide-y divide-gray-200 dark:divide-gray-700`}
+              >
                 {filteredClients
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, isTableExpanded ? Number.parseInt(rowsPerPage) * 2 : Number.parseInt(rowsPerPage))
