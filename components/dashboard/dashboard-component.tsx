@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import WelcomeHero from "./welcome-hero"
 import DebugDashboard from "./debug-dashboard"
@@ -80,10 +81,10 @@ export default function DashboardComponent() {
   }
 
   useEffect(() => {
-    // Simulate loading data
+    // Reduce loading time to make it feel more instant
     const timer = setTimeout(() => {
       setIsLoading(false)
-    }, 500)
+    }, 100)
 
     return () => clearTimeout(timer)
   }, [])
@@ -275,16 +276,36 @@ export default function DashboardComponent() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 animate-pulse">
-        <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-lg mb-6"></div>
+      <div className="container mx-auto p-4">
+        <div className="mb-8">
+          <Card className="w-full border-slate-200 dark:border-slate-700">
+            <CardContent className="p-6">
+              <Skeleton className="h-12 w-3/4 mb-4 bg-slate-200 dark:bg-slate-700" />
+              <Skeleton className="h-6 w-1/2 bg-slate-200 dark:bg-slate-700" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mb-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-6 w-1/4 bg-slate-200 dark:bg-slate-700" />
+            <Skeleton className="h-8 w-[200px] bg-slate-200 dark:bg-slate-700" />
+          </div>
+          <Skeleton className="h-4 w-1/3 mt-2 bg-slate-200 dark:bg-slate-700" />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+            <Card key={i} className="border-slate-200 dark:border-slate-700">
+              <CardHeader className="pb-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+                <Skeleton className="h-6 w-1/2 bg-slate-200 dark:bg-slate-700" />
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Skeleton className="h-8 w-1/2 mb-2 bg-slate-200 dark:bg-slate-700" />
+                <Skeleton className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700" />
+              </CardContent>
+            </Card>
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 h-64 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
-          <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
         </div>
       </div>
     )

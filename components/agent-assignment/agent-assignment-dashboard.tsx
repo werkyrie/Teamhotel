@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Trash2, Calendar, Users, Trophy, Sparkles } from "lucide-react"
+import { Search, Trash2, Calendar, Users, Trophy, Sparkles, Maximize2, Minimize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { Client } from "@/types/client"
 import { db } from "@/lib/firebase"
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "firebase/firestore"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Sample agent names - we'll use these for display and tracking
 const agents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
@@ -206,6 +207,10 @@ export default function AgentAssignmentDashboard() {
 
   const [selectedClients, setSelectedClients] = useState<string[]>([])
   const [selectAll, setSelectAll] = useState(false)
+
+  // New state for expanded table view
+  const [isTableExpanded, setIsTableExpanded] = useState<boolean>(false)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
 
   // Calculate agent workloads
   const calculateAgentWorkloads = (): Record<string, AgentWorkload> => {
@@ -425,6 +430,28 @@ export default function AgentAssignmentDashboard() {
     return () => unsubscribe()
   }, [user])
 
+  // Load expanded state from localStorage on component mount
+  useEffect(() => {
+    const savedExpandedState = localStorage.getItem("clientTableExpanded")
+    if (savedExpandedState !== null) {
+      setIsTableExpanded(savedExpandedState === "true")
+    }
+  }, [])
+
+  // Save expanded state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("clientTableExpanded", isTableExpanded.toString())
+  }, [isTableExpanded])
+
+  // Scroll to table when expanded
+  useEffect(() => {
+    if (isTableExpanded && tableContainerRef.current) {
+      setTimeout(() => {
+        tableContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 100)
+    }
+  }, [isTableExpanded])
+
   // Extract age from various formats (e.g., "41yrs old" -> "41")
   const extractAge = (ageText: string): string => {
     const numericMatch = ageText.match(/\d+/)
@@ -565,6 +592,11 @@ export default function AgentAssignmentDashboard() {
         variant: "destructive",
       })
     }
+  }
+
+  // Toggle expanded table view
+  const toggleTableExpanded = () => {
+    setIsTableExpanded(!isTableExpanded)
   }
 
   const resetFilters = () => {
@@ -794,6 +826,13 @@ export default function AgentAssignmentDashboard() {
     return `${date.getDate()}/${date.getMonth() + 1}`
   }
 
+  // Show Application column by default when expanded
+  useEffect(() => {
+    if (isTableExpanded) {
+      setShowApplicationColumn(true)
+    }
+  }, [isTableExpanded])
+
   return (
     <div className="space-y-6">
       {/* Header Card */}
@@ -957,8 +996,8 @@ export default function AgentAssignmentDashboard() {
         </Card>
       </div>
 
-      {/* Agent Workload Section */}
-      <div>
+      {/* Agent Workload Section - Hidden when table is expanded */}
+      <div className={`transition-all duration-500 ${isTableExpanded ? "hidden" : "block"}`}>
         <h2 className="text-xl font-semibold mb-4 border-b pb-2 dark:text-gray-100 dark:border-gray-700">
           Agent Workload
         </h2>
@@ -1066,8 +1105,8 @@ export default function AgentAssignmentDashboard() {
         </div>
       </div>
 
-      {/* Add New Clients Section */}
-      <div>
+      {/* Add New Clients Section - Hidden when table is expanded */}
+      <div className={`transition-all duration-500 ${isTableExpanded ? "hidden" : "block"}`}>
         <h2 className="text-xl font-semibold mb-4 border-b pb-2 dark:text-gray-100 dark:border-gray-700">
           Add New Clients
         </h2>
@@ -1095,13 +1134,33 @@ export default function AgentAssignmentDashboard() {
       </div>
 
       {/* Client Assignment Table */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2 dark:text-gray-100 dark:border-gray-700">
-          Client Assignment Table
-        </h2>
+      <div
+        ref={tableContainerRef}
+        className={`transition-all duration-500 ease-in-out ${
+          isTableExpanded ? "fixed inset-0 z-50 bg-background p-0 flex flex-col overflow-hidden" : ""
+        }`}
+      >
+        <div className={`flex justify-between items-center ${isTableExpanded ? "p-4 pb-2" : "mb-4"}`}>
+          <h2 className="text-xl font-semibold border-b pb-2 dark:text-gray-100 dark:border-gray-700">
+            Client Assignment Table
+          </h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={toggleTableExpanded} className="ml-2">
+                  {isTableExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  <span className="ml-2">{isTableExpanded ? "Collapse" : "Expand"}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isTableExpanded ? "Collapse table view" : "Expand table view"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
         {/* Search Bar */}
-        <div className="relative mb-4">
+        <div className={`relative ${isTableExpanded ? "px-4 mb-2" : "mb-4"}`}>
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search for clients by any field..."
@@ -1112,7 +1171,7 @@ export default function AgentAssignmentDashboard() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${isTableExpanded ? "px-4 mb-2" : "mb-4"}`}>
           <div>
             <label className="text-sm font-medium block mb-1 dark:text-gray-300">Agent</label>
             <Select value={agentFilter} onValueChange={setAgentFilter}>
@@ -1153,7 +1212,11 @@ export default function AgentAssignmentDashboard() {
               onClick={() => setShowApplicationColumn(!showApplicationColumn)}
               className="w-full border-gray-300 focus:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             >
-              {showApplicationColumn ? "Hide Application" : "Show Application"}
+              {isTableExpanded && showApplicationColumn
+                ? "Hide Application"
+                : showApplicationColumn
+                  ? "Hide Application"
+                  : "Show Application"}
             </Button>
           </div>
 
@@ -1176,7 +1239,7 @@ export default function AgentAssignmentDashboard() {
 
         {/* Bulk Actions */}
         {isAdmin && selectedClients.length > 0 && (
-          <div className="mb-4 flex justify-between items-center">
+          <div className={`flex justify-between items-center ${isTableExpanded ? "px-4 mb-2" : "mb-4"}`}>
             <div className="text-sm">
               <span className="font-medium">{selectedClients.length}</span> clients selected
             </div>
@@ -1193,7 +1256,11 @@ export default function AgentAssignmentDashboard() {
         )}
 
         {/* Table */}
-        <div className="border rounded-md overflow-x-auto shadow-sm dark:border-gray-700">
+        <div
+          className={`border rounded-md overflow-auto shadow-sm dark:border-gray-700 ${
+            isTableExpanded ? "flex-1 m-4 mt-0" : ""
+          }`}
+        >
           {loading ? (
             <div className="p-8 text-center">
               <p>Loading client assignments...</p>
@@ -1212,31 +1279,47 @@ export default function AgentAssignmentDashboard() {
                       />
                     </th>
                   )}
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th
+                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                  >
                     Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th
+                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                  >
                     Age
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th
+                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                  >
                     Location
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th
+                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                  >
                     Work
                   </th>
                   {showApplicationColumn && (
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th
+                      className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                    >
                       Application
                     </th>
                   )}
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th
+                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                  >
                     Assigned Agent
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th
+                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                  >
                     Date
                   </th>
                   {isAdmin && (
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th
+                      className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${isTableExpanded ? "text-sm" : ""}`}
+                    >
                       Actions
                     </th>
                   )}
@@ -1245,7 +1328,7 @@ export default function AgentAssignmentDashboard() {
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredClients
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .slice(0, Number.parseInt(rowsPerPage))
+                  .slice(0, isTableExpanded ? Number.parseInt(rowsPerPage) * 2 : Number.parseInt(rowsPerPage))
                   .map((client) => (
                     <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       {isAdmin && (
@@ -1258,14 +1341,16 @@ export default function AgentAssignmentDashboard() {
                           />
                         </td>
                       )}
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                      <td
+                        className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                      >
                         {editingCell.clientId === client.id && editingCell.field === "name" ? (
                           <div className="flex items-center space-x-2">
                             <Input
                               ref={editInputRef}
                               value={editingCell.value}
                               onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              className="py-1 h-8 text-sm"
+                              className={`py-1 text-sm ${isTableExpanded ? "h-10" : "h-8"}`}
                               autoFocus
                             />
                             <div className="flex space-x-1">
@@ -1286,13 +1371,15 @@ export default function AgentAssignmentDashboard() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                      <td
+                        className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                      >
                         {editingCell.clientId === client.id && editingCell.field === "age" ? (
                           <div className="flex items-center space-x-2">
                             <Input
                               value={editingCell.value}
                               onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              className="py-1 h-8 text-sm"
+                              className={`py-1 text-sm ${isTableExpanded ? "h-10" : "h-8"}`}
                               autoFocus
                             />
                             <div className="flex space-x-1">
@@ -1313,13 +1400,15 @@ export default function AgentAssignmentDashboard() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                      <td
+                        className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                      >
                         {editingCell.clientId === client.id && editingCell.field === "location" ? (
                           <div className="flex items-center space-x-2">
                             <Input
                               value={editingCell.value}
                               onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              className="py-1 h-8 text-sm"
+                              className={`py-1 text-sm ${isTableExpanded ? "h-10" : "h-8"}`}
                               autoFocus
                             />
                             <div className="flex space-x-1">
@@ -1340,13 +1429,15 @@ export default function AgentAssignmentDashboard() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                      <td
+                        className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                      >
                         {editingCell.clientId === client.id && editingCell.field === "work" ? (
                           <div className="flex items-center space-x-2">
                             <Input
                               value={editingCell.value}
                               onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              className="py-1 h-8 text-sm"
+                              className={`py-1 text-sm ${isTableExpanded ? "h-10" : "h-8"}`}
                               autoFocus
                             />
                             <div className="flex space-x-1">
@@ -1368,13 +1459,15 @@ export default function AgentAssignmentDashboard() {
                         )}
                       </td>
                       {showApplicationColumn && (
-                        <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                        <td
+                          className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                        >
                           {editingCell.clientId === client.id && editingCell.field === "application" ? (
                             <div className="flex items-center space-x-2">
                               <Input
                                 value={editingCell.value}
                                 onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                                className="py-1 h-8 text-sm"
+                                className={`py-1 text-sm ${isTableExpanded ? "h-10" : "h-8"}`}
                                 autoFocus
                               />
                               <div className="flex space-x-1">
@@ -1396,14 +1489,16 @@ export default function AgentAssignmentDashboard() {
                           )}
                         </td>
                       )}
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                      <td
+                        className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                      >
                         {editingCell.clientId === client.id && editingCell.field === "assignedAgent" ? (
                           <div className="flex items-center space-x-2">
                             <Select
                               value={editingCell.value}
                               onValueChange={(value) => setEditingCell({ ...editingCell, value })}
                             >
-                              <SelectTrigger className="h-8 text-sm">
+                              <SelectTrigger className={`text-sm ${isTableExpanded ? "h-10" : "h-8"}`}>
                                 <SelectValue placeholder="Select agent" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1432,14 +1527,16 @@ export default function AgentAssignmentDashboard() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm dark:text-gray-200">
+                      <td
+                        className={`px-4 py-2 whitespace-nowrap dark:text-gray-200 ${isTableExpanded ? "text-base py-3" : "text-sm"}`}
+                      >
                         {editingCell.clientId === client.id && editingCell.field === "date" ? (
                           <div className="flex items-center space-x-2">
                             <Input
                               type="date"
                               value={editingCell.value}
                               onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                              className="py-1 h-8 text-sm"
+                              className={`py-1 text-sm ${isTableExpanded ? "h-10" : "h-8"}`}
                               autoFocus
                             />
                             <div className="flex space-x-1">

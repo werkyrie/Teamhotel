@@ -1,7 +1,8 @@
 "use client"
 
-import { Suspense, lazy, useEffect } from "react"
+import { Suspense, lazy, useEffect, useState } from "react"
 import DashboardSkeleton from "@/components/dashboard/dashboard-skeleton"
+import { useClientContext } from "@/context/client-context"
 
 // Lazy load the dashboard component with a custom loader
 const OptimizedDashboard = lazy(() =>
@@ -11,37 +12,35 @@ const OptimizedDashboard = lazy(() =>
 )
 
 export default function DashboardPage() {
+  const { clients } = useClientContext()
+  const [isDataReady, setIsDataReady] = useState(false)
+
+  // Check if data is ready
+  useEffect(() => {
+    if (clients && clients.length > 0) {
+      setIsDataReady(true)
+    }
+  }, [clients])
+
   // Preload critical components
   useEffect(() => {
     // Preload main dashboard components
     const preloadComponents = async () => {
-      // Preload in sequence to avoid overwhelming the browser
+      // Start preloading immediately
       const preloads = [
         () => import("@/components/dashboard/welcome-hero"),
         () => import("@/components/dashboard/optimized-statistics-grid"),
         () => import("@/components/dashboard/top-agents-card"),
         () => import("@/components/dashboard/admin-order-requests-card"),
+        () => import("@/components/dashboard/dashboard-component"),
       ]
 
-      for (const preload of preloads) {
-        try {
-          await preload()
-          // Small delay to not block the main thread
-          await new Promise((r) => setTimeout(r, 10))
-        } catch (e) {
-          // Silent fail on preload
-        }
-      }
+      // Use Promise.all to load components in parallel
+      await Promise.all(preloads.map((loader) => loader().catch(() => null)))
     }
 
-    // Use requestIdleCallback if available, otherwise setTimeout
-    if (typeof window !== "undefined") {
-      if ("requestIdleCallback" in window) {
-        ;(window as any).requestIdleCallback(preloadComponents)
-      } else {
-        setTimeout(preloadComponents, 200)
-      }
-    }
+    // Start preloading immediately
+    preloadComponents()
 
     // Add event listener for when the page becomes visible
     const handleVisibilityChange = () => {
