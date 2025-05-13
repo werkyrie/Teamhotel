@@ -185,6 +185,7 @@ export default function AgentAssignmentDashboard() {
   const [topAgentTitle, setTopAgentTitle] = useState<string>("TOP PERFORMING AGENT")
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false)
   const [dateFilter, setDateFilter] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
   const [uniqueApplications, setUniqueApplications] = useState<string[]>([])
@@ -478,6 +479,9 @@ export default function AgentAssignmentDashboard() {
       return
     }
 
+    // Set processing state to true when starting
+    setIsProcessing(true)
+
     try {
       let name = ""
       let age = ""
@@ -528,26 +532,71 @@ export default function AgentAssignmentDashboard() {
           description: "Name and age are required",
           variant: "destructive",
         })
+        setIsProcessing(false) // Reset processing state on error
         return
       }
 
-      // Check for duplicate entries
-      const isDuplicate = clients.some(
-        (client) =>
-          client.name.toLowerCase() === name.toLowerCase() &&
-          client.age === age &&
-          client.location.toLowerCase() === location.toLowerCase() &&
-          client.work.toLowerCase() === work.toLowerCase() &&
-          client.application.toLowerCase() === application.toLowerCase(),
-      )
+      // Check for duplicate entries - strict comparison for exact duplicates only
+      const isDuplicate = clients.some((client) => {
+        // Normalize all values for comparison
+        const normalizedName = name.toLowerCase().trim()
+        const normalizedClientName = client.name.toLowerCase().trim()
+
+        const normalizedAge = age.trim()
+        const normalizedClientAge = client.age.trim()
+
+        const normalizedLocation = location.toLowerCase().trim()
+        const normalizedClientLocation = client.location.toLowerCase().trim()
+
+        const normalizedWork = work.toLowerCase().trim()
+        const normalizedClientWork = client.work.toLowerCase().trim()
+
+        const normalizedApplication = application.toLowerCase().trim()
+        const normalizedClientApplication = client.application.toLowerCase().trim()
+
+        // Check if ALL fields match exactly (100% duplicate)
+        return (
+          normalizedName === normalizedClientName &&
+          normalizedAge === normalizedClientAge &&
+          normalizedLocation === normalizedClientLocation &&
+          normalizedWork === normalizedClientWork &&
+          normalizedApplication === normalizedClientApplication
+        )
+      })
 
       if (isDuplicate) {
         toast({
-          title: "Duplicate Entry",
-          description: `An identical client entry already exists`,
+          title: "Duplicate Entry Rejected",
+          description: `This exact client information already exists in the database.`,
           variant: "destructive",
         })
+        setIsProcessing(false) // Reset processing state on error
         return
+      }
+
+      // Check if it's similar but not identical (has the same name but other differences)
+      const isSimilar = clients.some((client) => {
+        // Check if name matches but at least one other field is different
+        const nameMatches = client.name.toLowerCase().trim() === name.toLowerCase().trim()
+
+        if (!nameMatches) return false
+
+        const ageMatches = client.age.trim() === age.trim()
+        const locationMatches = client.location.toLowerCase().trim() === location.toLowerCase().trim()
+        const workMatches = client.work.toLowerCase().trim() === work.toLowerCase().trim()
+        const applicationMatches = client.application.toLowerCase().trim() === application.toLowerCase().trim()
+
+        // Return true if name matches but at least one other field is different
+        return nameMatches && !(ageMatches && locationMatches && workMatches && applicationMatches)
+      })
+
+      if (isSimilar) {
+        console.log("Similar entry detected but will be added")
+        toast({
+          title: "Similar Entry Detected",
+          description: `A client with the same name exists but has different details. This entry will be added.`,
+          variant: "warning",
+        })
       }
 
       // Create new client with default values for optional fields
@@ -591,6 +640,9 @@ export default function AgentAssignmentDashboard() {
         description: "Failed to process client information",
         variant: "destructive",
       })
+    } finally {
+      // Always reset processing state when done
+      setIsProcessing(false)
     }
   }
 
@@ -1118,14 +1170,42 @@ export default function AgentAssignmentDashboard() {
                 className="min-h-[150px] resize-none focus:ring-2 focus:ring-gray-800 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                 value={clientText}
                 onChange={(e) => setClientText(e.target.value)}
+                disabled={isProcessing}
               />
               <div className="pt-2">
                 <Button
                   variant="default"
                   className="bg-gray-800 hover:bg-gray-700 text-white dark:bg-gray-700 dark:hover:bg-gray-600"
                   onClick={processClientInfo}
+                  disabled={isProcessing}
                 >
-                  Process Information
+                  {isProcessing ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Process Information"
+                  )}
                 </Button>
               </div>
             </div>
