@@ -1,14 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import OrderRequestForm from "./order-request-form"
 import OrderRequestList from "./order-request-list"
 import { FileText, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+// Add this custom animation
+const addBlinkAnimation = () => {
+  const style = document.createElement("style")
+  style.textContent = `
+    @keyframes blink {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+  `
+  document.head.appendChild(style)
+  return () => {
+    document.head.removeChild(style)
+  }
+}
+
 export default function OrderRequestPage() {
   const [activeTab, setActiveTab] = useState("list")
+
+  // Add this useEffect to inject the animation
+  useEffect(() => {
+    return addBlinkAnimation()
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -36,7 +56,10 @@ export default function OrderRequestPage() {
             <FileText className="h-4 w-4" />
             <span>View Requests</span>
           </TabsTrigger>
-          <TabsTrigger value="new" className="flex items-center gap-2">
+          <TabsTrigger
+            value="new"
+            className="flex items-center gap-2 relative overflow-hidden animate-pulse border-2 border-transparent before:absolute before:inset-0 before:border-2 before:border-blue-500 dark:before:border-blue-400 before:animate-[blink_1.5s_ease-in-out_infinite]"
+          >
             <PlusCircle className="h-4 w-4" />
             <span>New Request</span>
           </TabsTrigger>

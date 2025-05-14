@@ -135,6 +135,16 @@ export default function OrderModal({ mode, order, isOpen, onClose }: OrderModalP
     }
   }, [searchTerm, availableClients])
 
+  // Load last used location when adding a new order
+  useEffect(() => {
+    if (mode === "add") {
+      const lastUsedLocation = localStorage.getItem("lastUsedLocation")
+      if (lastUsedLocation) {
+        setLocation(lastUsedLocation)
+      }
+    }
+  }, [mode])
+
   // Validate shop ID
   const validateShopId = (shopIdToValidate?: string) => {
     const shopIdValue = shopIdToValidate || shopId
@@ -219,6 +229,11 @@ export default function OrderModal({ mode, order, isOpen, onClose }: OrderModalP
           description: `Order ${orderId} has been updated successfully.`,
           variant: "success",
         })
+      }
+
+      // Save the location for future use
+      if (location.trim()) {
+        localStorage.setItem("lastUsedLocation", location)
       }
 
       onClose()
