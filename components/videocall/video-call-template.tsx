@@ -89,25 +89,14 @@ const initialFormData: FormData = {
   purpose: "",
   fullName: "",
   location: "",
-  previousLocation: "",
   work: "",
-  divorce: "",
-  pet: "",
   kids: "",
-  weather: "",
-  parents: "",
-  plans: "",
-  ethnicity: "",
-  car: "",
 
   // Client Details
   clientName: "",
   clientLocation: "",
   clientWork: "",
-  hobbies: "",
-  clientkid: "",
   clientnickname: "",
-  clientweekend: "",
   clientweather: "",
 
   // Topics
@@ -115,6 +104,17 @@ const initialFormData: FormData = {
   afterCall: "",
   kidLocation: "",
   remarks: "",
+  previousLocation: "",
+  divorce: "",
+  pet: "",
+  weather: "",
+  parents: "",
+  plans: "",
+  ethnicity: "",
+  car: "",
+  hobbies: "",
+  clientkid: "",
+  clientweekend: "",
 }
 
 const requiredFields = [
@@ -131,6 +131,7 @@ const requiredFields = [
   "beforeCall",
   "afterCall",
   "kidLocation",
+  "remarks",
 ]
 
 export default function VideoCallTemplate() {
@@ -157,6 +158,8 @@ export default function VideoCallTemplate() {
   const pdfRef = useRef<HTMLIFrameElement>(null)
   const confettiContainerRef = useRef<HTMLDivElement>(null)
 
+  const isAuthenticityCall = formData.purpose.toLowerCase().includes("authenticity")
+
   // Section definitions
   const sections = [
     {
@@ -177,8 +180,8 @@ export default function VideoCallTemplate() {
       id: "topics",
       title: "Topics to Discuss",
       icon: <FileText className="h-4 w-4" />,
-      requiredFields: ["beforeCall", "afterCall", "kidLocation"],
-      optionalFields: ["remarks"],
+      requiredFields: ["beforeCall", "afterCall", "kidLocation", "remarks"],
+      optionalFields: [],
     },
   ]
 
@@ -190,8 +193,20 @@ export default function VideoCallTemplate() {
   }, [formData])
 
   const updateProgress = () => {
-    const totalFields = requiredFields.length
-    const filledFields = requiredFields.filter((field) => formData[field as keyof FormData]?.trim() !== "").length
+    let fieldsToCheck = [...requiredFields]
+
+    // Remove optional fields from model and client if it's an authenticity call
+    if (isAuthenticityCall) {
+      const modelOptionalFields = sections.find((s) => s.id === "model")?.optionalFields || []
+      const clientOptionalFields = sections.find((s) => s.id === "client")?.optionalFields || []
+
+      fieldsToCheck = fieldsToCheck.filter(
+        (field) => !modelOptionalFields.includes(field) && !clientOptionalFields.includes(field),
+      )
+    }
+
+    const totalFields = fieldsToCheck.length
+    const filledFields = fieldsToCheck.filter((field) => formData[field as keyof FormData]?.trim() !== "").length
     setProgress(Math.round((filledFields / totalFields) * 100))
   }
 
@@ -206,11 +221,30 @@ export default function VideoCallTemplate() {
   const isSectionComplete = (sectionId: string) => {
     const section = sections.find((s) => s.id === sectionId)
     if (!section) return false
-    return section.requiredFields.every((field) => formData[field as keyof FormData]?.trim() !== "")
+
+    let required = section.requiredFields
+
+    if (isAuthenticityCall && (sectionId === "model" || sectionId === "client")) {
+      const optionalFields = section.optionalFields || []
+      required = section.requiredFields.filter((field) => !optionalFields.includes(field))
+    }
+
+    return required.every((field) => formData[field as keyof FormData]?.trim() !== "")
   }
 
   const isFormValid = () => {
-    return requiredFields.every((field) => formData[field as keyof FormData]?.trim() !== "")
+    let fieldsToCheck = [...requiredFields]
+
+    if (isAuthenticityCall) {
+      const modelOptionalFields = sections.find((s) => s.id === "model")?.optionalFields || []
+      const clientOptionalFields = sections.find((s) => s.id === "client")?.optionalFields || []
+
+      fieldsToCheck = fieldsToCheck.filter(
+        (field) => !modelOptionalFields.includes(field) && !clientOptionalFields.includes(field),
+      )
+    }
+
+    return fieldsToCheck.every((field) => formData[field as keyof FormData]?.trim() !== "")
   }
 
   const toggleSection = (sectionId: string) => {
@@ -528,8 +562,14 @@ export default function VideoCallTemplate() {
     placeholder = "",
     helpText = "",
     tooltip = "",
+    hideForAuthenticity = false,
   ) => {
     const isCompleted = formData[name]?.trim() !== ""
+
+    // Hide field if it's an authenticity call and field should be hidden
+    if (isAuthenticityCall && hideForAuthenticity) {
+      return null
+    }
 
     return (
       <div className="space-y-2">
@@ -703,6 +743,9 @@ export default function VideoCallTemplate() {
                       <History className="h-4 w-4" />,
                       false,
                       "E.g., Manila",
+                      "",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "work",
@@ -718,6 +761,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Separated since 2022 (2 years)",
                       "If applicable, include when and for how long",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "pet",
@@ -726,6 +771,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Dog / Max / 3 years old",
                       "Type, name, age (or 'None' if not applicable)",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "kids",
@@ -741,6 +788,9 @@ export default function VideoCallTemplate() {
                       <CloudSun className="h-4 w-4" />,
                       false,
                       "E.g., Sunny, 3:45 PM",
+                      "",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "parents",
@@ -749,6 +799,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Mother (62, retired), Father (deceased)",
                       "Just put N/A if not mentioned",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "plans",
@@ -756,6 +808,9 @@ export default function VideoCallTemplate() {
                       <Calendar className="h-4 w-4" />,
                       false,
                       "E.g., Beach trip with friends",
+                      "",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "ethnicity",
@@ -763,6 +818,9 @@ export default function VideoCallTemplate() {
                       <Globe className="h-4 w-4" />,
                       false,
                       "E.g., Filipina Taiwanese",
+                      "",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "car",
@@ -771,6 +829,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Toyota Corolla 2020",
                       "Make, model, year (or 'None' if not applicable)",
+                      "",
+                      true,
                     )}
                   </div>
                 </div>
@@ -835,6 +895,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Hiking, Travel",
                       "Enter 'None' if not applicable",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "clientkid",
@@ -843,6 +905,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Lily / 3",
                       "Names and ages (or 'None' if not applicable)",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "clientnickname",
@@ -859,6 +923,8 @@ export default function VideoCallTemplate() {
                       false,
                       "E.g., Fishing trip",
                       "Enter 'None' if not applicable",
+                      "",
+                      true,
                     )}
                     {renderFormField(
                       "clientweather",
@@ -932,8 +998,14 @@ export default function VideoCallTemplate() {
                       "Asan ung Anak mo at ano ung Ginagawa nya?",
                     )}
                     <div className="space-y-2 md:col-span-2">
-                      <label htmlFor="remarks" className="text-sm font-medium">
+                      <label htmlFor="remarks" className="text-sm font-medium flex items-center gap-1">
                         Additional Topics
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] py-0 border-[#FE2C55] text-[#FE2C55] dark:border-[#FE2C55] dark:text-[#FE2C55]"
+                        >
+                          Required
+                        </Badge>
                       </label>
                       <div className="relative">
                         <div className="absolute left-3 top-3 text-muted-foreground">
@@ -945,7 +1017,8 @@ export default function VideoCallTemplate() {
                           value={formData.remarks}
                           onChange={handleInputChange}
                           className="pl-10 min-h-[100px] border-gray-300 dark:border-white/20 focus:border-gray-500 dark:focus:border-white focus:ring-1 focus:ring-gray-500/20 dark:focus:ring-white/20"
-                          placeholder="Specific topics you'd like to discuss with your client..."
+                          placeholder="Specific topics you'd like to discuss with your client... (Required)"
+                          required
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">

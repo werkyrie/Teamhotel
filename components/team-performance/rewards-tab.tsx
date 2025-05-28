@@ -58,6 +58,9 @@ export default function RewardsTab() {
   const [sortField, setSortField] = useState<string | null>("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
+  // Add state for month selection
+  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date())
+
   // Calculate pagination
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
@@ -186,8 +189,19 @@ export default function RewardsTab() {
   }
 
   const handleExportCsv = () => {
+    // Filter rewards by selected month if a month is selected
+    const filteredRewards = selectedMonth
+      ? existingRewards.filter((reward) => {
+          const rewardDate = new Date(reward.date)
+          return (
+            rewardDate.getMonth() === selectedMonth.getMonth() &&
+            rewardDate.getFullYear() === selectedMonth.getFullYear()
+          )
+        })
+      : existingRewards
+
     const headers = ["Date", "Agent", "Description", "Rewards", "Status"]
-    const rows = existingRewards.map((reward) => [
+    const rows = filteredRewards.map((reward) => [
       reward.date,
       reward.agentName,
       reward.description,
@@ -206,7 +220,9 @@ export default function RewardsTab() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", "rewards.csv")
+    // Include month and year in the filename
+    const monthYearStr = selectedMonth ? format(selectedMonth, "MMM-yyyy") : "all-time"
+    link.setAttribute("download", `rewards-${monthYearStr}.csv`)
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -214,7 +230,9 @@ export default function RewardsTab() {
 
     toast({
       title: "Export Successful",
-      description: "Rewards data has been exported to CSV",
+      description: selectedMonth
+        ? `Rewards data for ${format(selectedMonth, "MMMM yyyy")} has been exported to CSV`
+        : "All rewards data has been exported to CSV",
     })
   }
 
@@ -436,6 +454,31 @@ export default function RewardsTab() {
                   Reset Data
                 </Button>
               )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    {selectedMonth ? format(selectedMonth, "MMMM yyyy") : "All Time"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="month"
+                    selected={selectedMonth}
+                    onSelect={setSelectedMonth}
+                    initialFocus
+                    footer={
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-center text-center"
+                        onClick={() => setSelectedMonth(undefined)}
+                      >
+                        Reset (All Time)
+                      </Button>
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
               <Button variant="outline" size="sm" onClick={handleExportCsv}>
                 <FileDown className="h-4 w-4 mr-2" />
                 Export CSV

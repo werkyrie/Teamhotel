@@ -50,6 +50,9 @@ export default function AttendanceTab() {
     status: "Whole Day",
   })
 
+  // Add state for month selection
+  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date())
+
   // Sort the attendance records
   const sortedAttendance = useMemo(() => {
     const sorted = [...attendance].sort((a, b) => {
@@ -167,9 +170,20 @@ export default function AttendanceTab() {
   }
 
   const handleExportCsv = () => {
+    // Filter attendance by selected month if a month is selected
+    const filteredAttendance = selectedMonth
+      ? attendance.filter((record) => {
+          const recordDate = new Date(record.date)
+          return (
+            recordDate.getMonth() === selectedMonth.getMonth() &&
+            recordDate.getFullYear() === selectedMonth.getFullYear()
+          )
+        })
+      : attendance
+
     // Create CSV content
     const headers = ["Date", "Agent", "Status", "Remarks"]
-    const rows = attendance.map((record) => [record.date, record.agentName, record.status, record.remarks])
+    const rows = filteredAttendance.map((record) => [record.date, record.agentName, record.status, record.remarks])
 
     const csvContent = [
       headers.join(","),
@@ -183,7 +197,9 @@ export default function AttendanceTab() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", "absences.csv")
+    // Include month and year in the filename
+    const monthYearStr = selectedMonth ? format(selectedMonth, "MMM-yyyy") : "all-time"
+    link.setAttribute("download", `absences-${monthYearStr}.csv`)
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -191,7 +207,9 @@ export default function AttendanceTab() {
 
     toast({
       title: "Export Successful",
-      description: "Absences data has been exported to CSV",
+      description: selectedMonth
+        ? `Absence data for ${format(selectedMonth, "MMMM yyyy")} has been exported to CSV`
+        : "All absence data has been exported to CSV",
     })
   }
 
@@ -341,10 +359,37 @@ export default function AttendanceTab() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Absence Records</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    {selectedMonth ? format(selectedMonth, "MMMM yyyy") : "All Time"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="month"
+                    selected={selectedMonth}
+                    onSelect={setSelectedMonth}
+                    initialFocus
+                    footer={
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-center text-center"
+                        onClick={() => setSelectedMonth(undefined)}
+                      >
+                        Reset (All Time)
+                      </Button>
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

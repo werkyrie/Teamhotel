@@ -48,6 +48,9 @@ export default function PenaltiesTab() {
     date: undefined,
   })
 
+  // Add state for month selection
+  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date())
+
   // Calculate pagination
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
@@ -140,9 +143,25 @@ export default function PenaltiesTab() {
   }
 
   const handleExportCsv = () => {
+    // Filter penalties by selected month if a month is selected
+    const filteredPenalties = selectedMonth
+      ? penalties.filter((penalty) => {
+          const penaltyDate = new Date(penalty.date)
+          return (
+            penaltyDate.getMonth() === selectedMonth.getMonth() &&
+            penaltyDate.getFullYear() === selectedMonth.getFullYear()
+          )
+        })
+      : penalties
+
     // Create CSV content
     const headers = ["Date", "Agent", "Description", "Amount"]
-    const rows = penalties.map((penalty) => [penalty.date, penalty.agentName, penalty.description, penalty.amount])
+    const rows = filteredPenalties.map((penalty) => [
+      penalty.date,
+      penalty.agentName,
+      penalty.description,
+      penalty.amount,
+    ])
 
     const csvContent = [
       headers.join(","),
@@ -156,7 +175,9 @@ export default function PenaltiesTab() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.setAttribute("href", url)
-    link.setAttribute("download", "penalties.csv")
+    // Include month and year in the filename
+    const monthYearStr = selectedMonth ? format(selectedMonth, "MMM-yyyy") : "all-time"
+    link.setAttribute("download", `penalties-${monthYearStr}.csv`)
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -164,7 +185,9 @@ export default function PenaltiesTab() {
 
     toast({
       title: "Export Successful",
-      description: "Penalties data has been exported to CSV",
+      description: selectedMonth
+        ? `Penalties data for ${format(selectedMonth, "MMMM yyyy")} has been exported to CSV`
+        : "All penalties data has been exported to CSV",
     })
   }
 
@@ -327,10 +350,37 @@ export default function PenaltiesTab() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Penalty Records</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    {selectedMonth ? format(selectedMonth, "MMMM yyyy") : "All Time"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="month"
+                    selected={selectedMonth}
+                    onSelect={setSelectedMonth}
+                    initialFocus
+                    footer={
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-center text-center"
+                        onClick={() => setSelectedMonth(undefined)}
+                      >
+                        Reset (All Time)
+                      </Button>
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Trash2, Calendar, Users, Trophy, Sparkles, Maximize2, Minimize2 } from "lucide-react"
+import { Search, Trash2, Calendar, Users, Trophy, Sparkles, Maximize2, Minimize2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -212,6 +212,24 @@ export default function AgentAssignmentDashboard() {
   // New state for expanded table view
   const [isTableExpanded, setIsTableExpanded] = useState<boolean>(false)
   const tableContainerRef = useRef<HTMLDivElement>(null)
+
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportOptions, setExportOptions] = useState({
+    includeApplication: true,
+    dateRange: "all" as "all" | "current-month" | "custom",
+    customStartDate: "",
+    customEndDate: "",
+    selectedAgents: [] as string[],
+    selectedColumns: {
+      name: true,
+      age: true,
+      location: true,
+      work: true,
+      application: true,
+      assignedAgent: true,
+      date: true,
+    },
+  })
 
   // Calculate agent workloads
   const calculateAgentWorkloads = (): Record<string, AgentWorkload> => {
@@ -885,6 +903,206 @@ export default function AgentAssignmentDashboard() {
     }
   }, [isTableExpanded])
 
+  // Export filtered clients to CSV
+  const exportToCSV = () => {
+    let dataToExport = [...filteredClients]
+
+    // Apply additional export filters
+    if (exportOptions.dateRange === "current-month") {
+      const currentDate = new Date()
+      const currentMonth = currentDate.getMonth()
+      const currentYear = currentDate.getFullYear()
+
+      dataToExport = dataToExport.filter((client) => {
+        const clientDate = new Date(client.date)
+        return clientDate.getMonth() === currentMonth && clientDate.getFullYear() === currentYear
+      })
+    } else if (exportOptions.dateRange === "custom" && exportOptions.customStartDate && exportOptions.customEndDate) {
+      dataToExport = dataToExport.filter((client) => {
+        const clientDate = client.date
+        return clientDate >= exportOptions.customStartDate && clientDate <= exportOptions.customEndDate
+      })
+    }
+
+    // Filter by selected agents
+    if (exportOptions.selectedAgents.length > 0) {
+      dataToExport = dataToExport.filter((client) =>
+        exportOptions.selectedAgents.includes(client.assignedAgent.toLowerCase()),
+      )
+    }
+
+    // Prepare CSV headers based on selected columns
+    const headers = []
+    if (exportOptions.selectedColumns.name) headers.push("Name")
+    if (exportOptions.selectedColumns.age) headers.push("Age")
+    if (exportOptions.selectedColumns.location) headers.push("Location")
+    if (exportOptions.selectedColumns.work) headers.push("Work")
+    if (exportOptions.selectedColumns.application && exportOptions.includeApplication) headers.push("Application")
+    if (exportOptions.selectedColumns.assignedAgent) headers.push("Assigned Agent")
+    if (exportOptions.selectedColumns.date) headers.push("Date")
+
+    // Prepare CSV data
+    const csvData = dataToExport.map((client) => {
+      const row = []
+      if (exportOptions.selectedColumns.name) row.push(`"${client.name}"`)
+      if (exportOptions.selectedColumns.age) row.push(`"${client.age}"`)
+      if (exportOptions.selectedColumns.location) row.push(`"${client.location}"`)
+      if (exportOptions.selectedColumns.work) row.push(`"${client.work}"`)
+      if (exportOptions.selectedColumns.application && exportOptions.includeApplication)
+        row.push(`"${client.application}"`)
+      if (exportOptions.selectedColumns.assignedAgent) row.push(`"${client.assignedAgent}"`)
+      if (exportOptions.selectedColumns.date) row.push(`"${client.date}"`)
+      return row.join(",")
+    })
+
+    // Create CSV content
+    const csvContent = [headers.join(","), ...csvData].join("\n")
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+
+    // Generate filename based on filters
+    let filename = "client-assignments"
+    if (exportOptions.dateRange === "current-month") {
+      const currentDate = new Date()
+      const monthName = currentDate.toLocaleDateString("en-US", { month: "short" })
+      filename += `-${monthName}-${currentDate.getFullYear()}`
+    } else if (exportOptions.dateRange === "custom") {
+      filename += `-${exportOptions.customStartDate}-to-${exportOptions.customEndDate}`
+    }
+    filename += ".csv"
+
+    link.setAttribute("download", filename)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    setShowExportModal(false)
+    toast({
+      title: "Export Successful",
+      description: `Exported ${dataToExport.length} client records to ${filename}`,
+    })
+  }
+
+  // Export Options Modal
+  const ExportOptionsModal = () =>
+    showExportModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+          <h3 className="text-lg font-semibold mb-4 dark:text-gray-100">Export Options</h3>
+
+          {/* Date Range Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2 dark:text-gray-300">Date Range</label>
+            <Select
+              value={exportOptions.dateRange}
+              onValueChange={(value: "all" | "current-month" | "custom") =>
+                setExportOptions((prev) => ({ ...prev, dateRange: value }))
+              }
+            >
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="current-month">Current Month</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Date Range */}
+          {exportOptions.dateRange === "custom" && (
+            <div className="mb-4 space-y-2">
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Start Date</label>
+                <Input
+                  type="date"
+                  value={exportOptions.customStartDate}
+                  onChange={(e) => setExportOptions((prev) => ({ ...prev, customStartDate: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-gray-300">End Date</label>
+                <Input
+                  type="date"
+                  value={exportOptions.customEndDate}
+                  onChange={(e) => setExportOptions((prev) => ({ ...prev, customEndDate: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Agent Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2 dark:text-gray-300">Agents (leave empty for all)</label>
+            <Select
+              value={exportOptions.selectedAgents.length > 0 ? exportOptions.selectedAgents[0] : "all-agents"}
+              onValueChange={(value) => {
+                if (value === "all-agents") {
+                  setExportOptions((prev) => ({ ...prev, selectedAgents: [] }))
+                } else {
+                  setExportOptions((prev) => ({ ...prev, selectedAgents: [value] }))
+                }
+              }}
+            >
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
+                <SelectValue placeholder="All Agents" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-agents">All Agents</SelectItem>
+                {agents.map((agent) => (
+                  <SelectItem key={agent} value={agent.toLowerCase()}>
+                    {agent}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Column Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2 dark:text-gray-300">Columns to Include</label>
+            <div className="space-y-2">
+              {Object.entries(exportOptions.selectedColumns).map(([key, value]) => (
+                <label key={key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(e) =>
+                      setExportOptions((prev) => ({
+                        ...prev,
+                        selectedColumns: { ...prev.selectedColumns, [key]: e.target.checked },
+                      }))
+                    }
+                    className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span className="text-sm dark:text-gray-300 capitalize">{key}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline" onClick={() => setShowExportModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={exportToCSV} className="bg-gray-800 hover:bg-gray-700 text-white">
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+
   return (
     <div className="space-y-6">
       {/* Header Card */}
@@ -1224,19 +1442,30 @@ export default function AgentAssignmentDashboard() {
           <h2 className="text-xl font-semibold border-b pb-2 dark:text-gray-100 dark:border-gray-700">
             Client Assignment Table
           </h2>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" onClick={toggleTableExpanded} className="ml-2">
-                  {isTableExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  <span className="ml-2">{isTableExpanded ? "Collapse" : "Expand"}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isTableExpanded ? "Collapse table view" : "Expand table view"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExportModal(true)}
+              className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={toggleTableExpanded} className="ml-2">
+                    {isTableExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    <span className="ml-2">{isTableExpanded ? "Collapse" : "Expand"}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isTableExpanded ? "Collapse table view" : "Expand table view"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -1659,6 +1888,9 @@ export default function AgentAssignmentDashboard() {
           )}
         </div>
       </div>
+
+      {/* Export Options Modal */}
+      <ExportOptionsModal />
     </div>
   )
 }
