@@ -24,7 +24,7 @@ import { PaginationControls } from "@/components/pagination-controls"
 export default function RewardsTab() {
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const { agents, rewards: existingRewards, addReward, deleteReward, updateReward } = useTeamContext()
   const { isViewer, isAdmin } = useAuth() // Get viewer and admin status
@@ -56,7 +56,7 @@ export default function RewardsTab() {
 
   // Add state for sorting
   const [sortField, setSortField] = useState<string | null>("date")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
   // Add state for month selection
   const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date())

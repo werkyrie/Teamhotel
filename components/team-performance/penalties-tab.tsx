@@ -22,7 +22,7 @@ import { PaginationControls } from "@/components/pagination-controls"
 export default function PenaltiesTab() {
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const { agents, penalties, addPenalty, deletePenalty, updatePenalty } = useTeamContext()
   const { isViewer, isAdmin } = useAuth() // Get viewer and admin status
@@ -54,8 +54,14 @@ export default function PenaltiesTab() {
   // Calculate pagination
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentPenalties = penalties.slice(indexOfFirstItem, indexOfLastItem)
-  const totalPages = Math.ceil(penalties.length / itemsPerPage)
+  // Sort penalties by date (latest first)
+  const sortedPenalties = [...penalties].sort((a, b) => {
+    const dateA = new Date(a.date).getTime()
+    const dateB = new Date(b.date).getTime()
+    return dateB - dateA // Descending order (latest first)
+  })
+  const currentPenalties = sortedPenalties.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(sortedPenalties.length / itemsPerPage)
 
   // Handle page changes
   const handlePageChange = (page: number) => {
@@ -520,7 +526,7 @@ export default function PenaltiesTab() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
-          totalItems={penalties.length}
+          totalItems={sortedPenalties.length}
           itemsPerPage={itemsPerPage}
           onItemsPerPageChange={handleItemsPerPageChange}
         />

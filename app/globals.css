@@ -615,7 +615,7 @@
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Clip path shapes for rank badges */
+  /* Clip path shapes for rank badges - Mobile Legends inspired */
   .clip-path-octagon {
     clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
   }
@@ -647,4 +647,82 @@
   .clip-path-circle {
     clip-path: circle(50% at 50% 50%);
   }
+
+  /* New Mobile Legends inspired shapes */
+  .clip-path-flame {
+    clip-path: polygon(50% 0%, 60% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 40% 35%);
+  }
+
+  .clip-path-star {
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+
+  .clip-path-crystal {
+    clip-path: polygon(50% 0%, 80% 10%, 100% 35%, 85% 65%, 100% 90%, 50% 100%, 0% 90%, 15% 65%, 0% 35%, 20% 10%);
+  }
+
+  /* Enhanced border styles */
+  .border-3 {
+    border-width: 3px;
+  }
+
+  .border-4 {
+    border-width: 4px;
+  }
+}
+
+/* Additional rank-specific animations */
+@keyframes rainbow-spin {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes mythic-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(236, 72, 153, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.6), 0 0 60px rgba(168, 85, 247, 0.3);
+  }
+}
+
+@keyframes legend-flame {
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5), 0 0 30px rgba(251, 146, 60, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(251, 146, 60, 0.7), 0 0 45px rgba(239, 68, 68, 0.4);
+  }
+}
+
+@keyframes epic-sparkle {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(147, 51, 234, 0.4), 0 0 24px rgba(139, 92, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.6), 0 0 35px rgba(147, 51, 234, 0.3);
+  }
+}
+
+.animate-rainbow-spin {
+  animation: rainbow-spin 3s linear infinite;
+}
+
+.animate-mythic-glow {
+  animation: mythic-glow 2s ease-in-out infinite;
+}
+
+.animate-legend-flame {
+  animation: legend-flame 1.5s ease-in-out infinite;
+}
+
+.animate-epic-sparkle {
+  animation: epic-sparkle 2.5s ease-in-out infinite;
 }

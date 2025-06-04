@@ -27,7 +27,7 @@ export default function AttendanceTab() {
 
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const [selectedAgentId, setSelectedAgentId] = useState("")
   const [remarks, setRemarks] = useState("")
@@ -35,8 +35,8 @@ export default function AttendanceTab() {
   const [status, setStatus] = useState<"Whole Day" | "Half Day" | "Leave" | "Undertime">("Whole Day")
   // Add a state variable to control form visibility
   const [showForm, setShowForm] = useState(false)
-  const [sortField, setSortField] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [sortField, setSortField] = useState<string | null>("date")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
   // Add state for editing
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -56,14 +56,11 @@ export default function AttendanceTab() {
   // Sort the attendance records
   const sortedAttendance = useMemo(() => {
     const sorted = [...attendance].sort((a, b) => {
-      if (!sortField) return 0
-
       if (sortField === "date") {
         const dateA = new Date(a.date).getTime()
         const dateB = new Date(b.date).getTime()
         return sortDirection === "asc" ? dateA - dateB : dateB - dateA
       }
-
       return 0
     })
     return sorted

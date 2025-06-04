@@ -22,7 +22,6 @@ import {
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -515,345 +514,141 @@ export default function DashboardComponent() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left Column (2/3 width) */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Top Agents Card (Moved from right column) */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-            <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
-              <CardHeader className="pb-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    Top Performing Agents
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-8"
-                      onClick={() => setShowRankInfo(!showRankInfo)}
-                    >
-                      {showRankInfo ? "Hide Ranks" : "View Ranks"}
-                    </Button>
-                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                      <SelectTrigger className="w-[180px] h-8 text-xs">
-                        <SelectValue placeholder="Select period" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={globalMonthFilter}>Same as Dashboard</SelectItem>
-                        <SelectItem value="current">Current Month</SelectItem>
-                        <SelectItem value="1">Last Month</SelectItem>
-                        <SelectItem value="2">2 Months Ago</SelectItem>
-                        <SelectItem value="3">3 Months Ago</SelectItem>
-                        <SelectItem value="all">All Time</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+      <div className="space-y-4">
+        {/* Top Agents Card (Full Width) */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
+            <CardHeader className="pb-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  Top Performing Agents
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                    onClick={() => setShowRankInfo(!showRankInfo)}
+                  >
+                    {showRankInfo ? "Hide Ranks" : "View Ranks"}
+                  </Button>
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={globalMonthFilter}>Same as Dashboard</SelectItem>
+                      <SelectItem value="current">Current Month</SelectItem>
+                      <SelectItem value="1">Last Month</SelectItem>
+                      <SelectItem value="2">2 Months Ago</SelectItem>
+                      <SelectItem value="3">3 Months Ago</SelectItem>
+                      <SelectItem value="all">All Time</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <CardDescription>
-                  Agent performance for{" "}
-                  {selectedMonth === globalMonthFilter
-                    ? `Same as Dashboard (${getMonthName(globalMonthFilter)})`
-                    : getMonthName(selectedMonth)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {showRankInfo ? (
-                  <RankShowcase />
-                ) : topAgents.length > 0 ? (
-                  <div className="space-y-6">
-                    {/* Top 5 Leaderboard */}
-                    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-card shadow-sm">
-                      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 text-center">
-                        <h3 className="text-white font-bold text-lg tracking-wide">TOP PERFORMERS LEADERBOARD</h3>
-                      </div>
-                      <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                        {topAgents.slice(0, 10).map((agent, index) => {
-                          // Get rank based on position
-                          const rank = index + 1
-                          const rankName = getRankName(rank)
-                          const rankTextColor = getRankTextColor(rank)
+              </div>
+              <CardDescription>
+                Agent performance for{" "}
+                {selectedMonth === globalMonthFilter
+                  ? `Same as Dashboard (${getMonthName(globalMonthFilter)})`
+                  : getMonthName(selectedMonth)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {showRankInfo ? (
+                <RankShowcase />
+              ) : topAgents.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Top 5 Leaderboard */}
+                  <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-card shadow-sm">
+                    <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 text-center">
+                      <h3 className="text-white font-bold text-lg tracking-wide">TOP PERFORMERS LEADERBOARD</h3>
+                    </div>
+                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {topAgents.slice(0, 10).map((agent, index) => {
+                        // Get rank based on position
+                        const rank = index + 1
+                        const rankName = getRankName(rank)
+                        const rankTextColor = getRankTextColor(rank)
 
-                          return (
-                            <div
-                              key={agent.agent}
-                              className="flex items-center p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                            >
-                              {/* Rank Badge */}
-                              <RankBadge rank={rank} className="mr-3" />
+                        return (
+                          <div
+                            key={agent.agent}
+                            className="flex items-center p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          >
+                            {/* Rank Badge */}
+                            <RankBadge rank={rank} className="mr-3" />
 
-                              {/* Agent Info */}
-                              <div className="flex flex-1 items-center">
-                                <Avatar className="h-10 w-10 mr-3 border-2 border-white shadow-sm">
-                                  <AvatarFallback className={getAgentColor(agent.agent)}>
-                                    {agent.agent.substring(0, 2)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className={`font-medium ${rankTextColor}`}>{agent.agent}</p>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-xs text-muted-foreground">{agent.clientCount} clients</span>
-                                    <span
-                                      className={`text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 ${rankTextColor}`}
-                                    >
-                                      {rankName}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Value/Amount */}
-                              <div className="text-right">
-                                <div className={`font-bold ${rankTextColor}`}>{formatCurrency(agent.value)}</div>
-
-                                {/* Progress bar */}
-                                <div className="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
-                                  <div
-                                    className={`h-full ${
-                                      rank === 1
-                                        ? "bg-gradient-to-r from-purple-500 to-yellow-400"
-                                        : rank === 2
-                                          ? "bg-gradient-to-r from-pink-500 to-yellow-400"
-                                          : rank === 3
-                                            ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                                            : rank === 4
-                                              ? "bg-gradient-to-r from-teal-500 to-emerald-400"
-                                              : rank === 5
-                                                ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                                                : "bg-blue-500"
-                                    }`}
-                                    style={{ width: `${agent.percentage}%` }}
-                                  />
+                            {/* Agent Info */}
+                            <div className="flex flex-1 items-center">
+                              <Avatar className="h-10 w-10 mr-3 border-2 border-white shadow-sm">
+                                <AvatarFallback className={getAgentColor(agent.agent)}>
+                                  {agent.agent.substring(0, 2)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className={`font-medium ${rankTextColor}`}>{agent.agent}</p>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-muted-foreground">{agent.clientCount} clients</span>
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 ${rankTextColor}`}
+                                  >
+                                    {rankName}
+                                  </span>
                                 </div>
                               </div>
                             </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-muted-foreground">
-                    <p>No agent data available for this period</p>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs w-full justify-between"
-                  onClick={() => router.push("/?tab=team")}
-                >
-                  <span>View all agents</span>
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              </CardFooter>
-            </Card>
-          </motion.div>
 
-          {/* Client Inactivity Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
-            <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
-              <CardHeader className="pb-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-slate-500" />
-                  Client Inactivity Alerts
-                </CardTitle>
-                <CardDescription>Clients requiring attention</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <Tabs defaultValue="orders">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="orders">Order Inactivity</TabsTrigger>
-                    <TabsTrigger value="deposits">Deposit Inactivity</TabsTrigger>
-                  </TabsList>
+                            {/* Value/Amount */}
+                            <div className="text-right">
+                              <div className={`font-bold ${rankTextColor}`}>{formatCurrency(agent.value)}</div>
 
-                  <TabsContent value="orders" className="space-y-4 mt-4">
-                    {inactiveOrderClients.length > 0 ? (
-                      <div className="space-y-3">
-                        {inactiveOrderClients.slice(0, 3).map((client) => (
-                          <div
-                            key={client.shopId}
-                            className="flex items-center justify-between p-3 border rounded-md bg-yellow-50 dark:bg-yellow-900/20"
-                          >
-                            <div>
-                              <p className="font-medium">{client.clientName}</p>
-                              <p className="text-sm text-muted-foreground">{client.shopId}</p>
-                              <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                                {client.daysSinceLastOrder === null
-                                  ? "No orders yet"
-                                  : `${client.daysSinceLastOrder} days since last order`}
-                              </p>
+                              {/* Progress bar */}
+                              <div className="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
+                                <div
+                                  className={`h-full ${
+                                    rank === 1
+                                      ? "bg-gradient-to-r from-purple-500 to-yellow-400"
+                                      : rank === 2
+                                        ? "bg-gradient-to-r from-pink-500 to-yellow-400"
+                                        : rank === 3
+                                          ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                          : rank === 4
+                                            ? "bg-gradient-to-r from-teal-500 to-emerald-400"
+                                            : rank === 5
+                                              ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                                              : "bg-blue-500"
+                                  }`}
+                                  style={{ width: `${agent.percentage}%` }}
+                                />
+                              </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => router.push(`/?tab=clients&view=${client.shopId}`)}
-                            >
-                              View <ArrowRight className="ml-1 h-3 w-3" />
-                            </Button>
                           </div>
-                        ))}
-
-                        {inactiveOrderClients.length > 3 && (
-                          <Button
-                            variant="outline"
-                            className="w-full text-xs"
-                            onClick={() => router.push("/?tab=clients")}
-                          >
-                            View all {inactiveOrderClients.length} clients
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
-                        <p>No clients with order inactivity</p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="deposits" className="space-y-4 mt-4">
-                    {inactiveDepositClients.length > 0 ? (
-                      <div className="space-y-3">
-                        {inactiveDepositClients.slice(0, 3).map((client) => (
-                          <div
-                            key={client.shopId}
-                            className="flex items-center justify-between p-3 border rounded-md bg-orange-50 dark:bg-orange-900/20"
-                          >
-                            <div>
-                              <p className="font-medium">{client.clientName}</p>
-                              <p className="text-sm text-muted-foreground">{client.shopId}</p>
-                              <p className="text-xs text-orange-700 dark:text-orange-400">
-                                {client.daysSinceLastDeposit === null
-                                  ? "No deposits yet"
-                                  : `${client.daysSinceLastDeposit} days since last deposit`}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => router.push(`/?tab=clients&view=${client.shopId}`)}
-                            >
-                              View <ArrowRight className="ml-1 h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-
-                        {inactiveDepositClients.length > 3 && (
-                          <Button
-                            variant="outline"
-                            className="w-full text-xs"
-                            onClick={() => router.push("/?tab=clients")}
-                          >
-                            View all {inactiveDepositClients.length} clients
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
-                        <p>No clients with deposit inactivity</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Right Column (1/3 width) */}
-        <div className="space-y-4">
-          {/* Calendar Card */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
-            <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
-              <CardHeader className="pb-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-slate-500" />
-                  {globalMonthFilter === "current" ? "Today" : getMonthName(globalMonthFilter)}
-                </CardTitle>
-                <CardDescription>{format(new Date(), "EEEE, MMMM d, yyyy")}</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-md bg-blue-50 dark:bg-blue-900/20">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
-                        <ShoppingBag className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Recent Orders</p>
-                        <p className="text-sm text-muted-foreground">
-                          {orders?.filter((o) => {
-                            const orderDate = new Date(o.date)
-                            const today = new Date()
-                            return orderDate.toDateString() === today.toDateString()
-                          }).length || 0}{" "}
-                          orders today
-                        </p>
-                      </div>
+                        )
+                      })}
                     </div>
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => router.push("/?tab=orders")}>
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-md bg-green-50 dark:bg-green-900/20">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center">
-                        <CreditCard className="h-4 w-4 text-green-600 dark:text-green-300" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Recent Deposits</p>
-                        <p className="text-sm text-muted-foreground">
-                          {deposits?.filter((d) => {
-                            const depositDate = new Date(d.date)
-                            const today = new Date()
-                            return depositDate.toDateString() === today.toDateString()
-                          }).length || 0}{" "}
-                          deposits today
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => router.push("/?tab=deposits")}>
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-md bg-red-50 dark:bg-red-900/20">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center">
-                        <DollarSign className="h-4 w-4 text-red-600 dark:text-red-300" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Recent Withdrawals</p>
-                        <p className="text-sm text-muted-foreground">
-                          {withdrawals?.filter((w) => {
-                            const withdrawalDate = new Date(w.date)
-                            const today = new Date()
-                            return withdrawalDate.toDateString() === today.toDateString()
-                          }).length || 0}{" "}
-                          withdrawals today
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => router.push("/?tab=withdrawals")}
-                    >
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+              ) : (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>No agent data available for this period</p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="pt-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs w-full justify-between"
+                onClick={() => router.push("/?tab=team")}
+              >
+                <span>View all agents</span>
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
       </div>
     </div>
   )
