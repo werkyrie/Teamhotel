@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useClientContext } from "@/context/client-context"
 import { useAuth } from "@/context/auth-context"
-import { differenceInDays, format, subMonths, startOfMonth, endOfMonth } from "date-fns"
+import { differenceInDays, format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import WelcomeHero from "./welcome-hero"
 import DebugDashboard from "./debug-dashboard"
@@ -40,7 +41,9 @@ export default function DashboardComponent() {
   const [inactiveDepositClients, setInactiveDepositClients] = useState<any[]>([])
   const [pendingOrderRequests, setPendingOrderRequests] = useState<any[]>([])
   const [selectedMonth, setSelectedMonth] = useState<string>("current")
-  const [topAgents, setTopAgents] = useState<any[]>([])
+  const [topDepositAgents, setTopDepositAgents] = useState<any[]>([])
+  const [topWithdrawalAgents, setTopWithdrawalAgents] = useState<any[]>([])
+  const [topNewClientAgents, setTopNewClientAgents] = useState<any[]>([])
   const [showRankInfo, setShowRankInfo] = useState(false)
   const [stats, setStats] = useState({
     totalDeposits: 0,
@@ -108,74 +111,154 @@ export default function DashboardComponent() {
 
   // Calculate top agents based on selected month
   useEffect(() => {
-    if (!deposits || !clients) return
+    if (!deposits || !clients || !withdrawals) return
 
     let filteredDeposits = [...deposits]
+    let filteredWithdrawals = [...withdrawals]
+    let dateRange = { startDate: new Date(2000, 0, 1), endDate: new Date() }
 
-    // Filter deposits based on selected month
+    // Filter deposits and withdrawals based on selected month
     if (selectedMonth !== "all") {
-      let startDate, endDate
-
-      if (selectedMonth === "current") {
-        const now = new Date()
-        startDate = startOfMonth(now)
-        endDate = endOfMonth(now)
-      } else {
-        // Parse the month value (e.g., "1" for 1 month ago)
-        const monthsAgo = Number.parseInt(selectedMonth)
-        const now = new Date()
-        const targetMonth = subMonths(now, monthsAgo)
-        startDate = startOfMonth(targetMonth)
-        endDate = endOfMonth(targetMonth)
-      }
+      dateRange = getDateRangeFromFilter(selectedMonth)
 
       filteredDeposits = deposits.filter((deposit) => {
         const depositDate = new Date(deposit.date)
-        return depositDate >= startDate && depositDate <= endDate
+        return depositDate >= dateRange.startDate && depositDate <= dateRange.endDate
+      })
+
+      filteredWithdrawals = withdrawals.filter((withdrawal) => {
+        const withdrawalDate = new Date(withdrawal.date)
+        return withdrawalDate >= dateRange.startDate && withdrawalDate <= dateRange.endDate
       })
     }
 
     // Calculate deposits by agent
     const agentDeposits: Record<string, number> = {}
+    const agentWithdrawals: Record<string, number> = {}
+    const agentNewClients: Record<string, number> = {}
     const agentClients: Record<string, Set<string>> = {}
 
+    // Initialize agent data
+    const allAgents = new Set<string>()
+
+    filteredDeposits.forEach((deposit) => {
+      if (deposit.agent) allAgents.add(deposit.agent)
+    })
+
+    filteredWithdrawals.forEach((withdrawal) => {
+      if (withdrawal.agent) allAgents.add(withdrawal.agent)
+    })
+
+    clients.forEach((client) => {
+      if (client.agent) allAgents.add(client.agent)
+    })
+
+    allAgents.forEach((agent) => {
+      agentDeposits[agent] = 0
+      agentWithdrawals[agent] = 0
+      agentNewClients[agent] = 0
+      agentClients[agent] = new Set()
+    })
+
+    // Count new clients opened during the selected period for each agent
+    clients.forEach((client) => {
+      if (client.kycDate && client.agent) {
+        const kycDate = new Date(client.kycDate)
+        // Check if client was created within the selected date range
+        if (isWithinInterval(kycDate, { start: dateRange.startDate, end: dateRange.endDate })) {
+          agentNewClients[client.agent] = (agentNewClients[client.agent] || 0) + 1
+        }
+      }
+    })
+
+    // Calculate deposits by agent
     filteredDeposits.forEach((deposit) => {
       const { agent, amount, shopId } = deposit
 
       if (!agent) return
 
-      if (!agentDeposits[agent]) {
-        agentDeposits[agent] = 0
-        agentClients[agent] = new Set()
-      }
-
       agentDeposits[agent] += amount
       agentClients[agent].add(shopId)
     })
 
-    // Convert to array and sort
-    const sortedAgents = Object.entries(agentDeposits)
+    // Calculate withdrawals by agent
+    filteredWithdrawals.forEach((withdrawal) => {
+      const { agent, amount } = withdrawal
+
+      if (!agent) return
+
+      agentWithdrawals[agent] += amount
+    })
+
+    // Create deposit leaderboard
+    const sortedDepositAgents = Object.entries(agentDeposits)
       .map(([agent, value]) => ({
         agent,
         value,
         clientCount: agentClients[agent].size,
+        withdrawalAmount: agentWithdrawals[agent] || 0,
+        newClientsCount: agentNewClients[agent] || 0,
       }))
+      .filter((agent) => agent.value > 0) // Only show agents with deposits
       .sort((a, b) => b.value - a.value)
       .slice(0, 10)
 
-    // Calculate percentages
-    const maxDeposit = sortedAgents.length > 0 ? sortedAgents[0].value : 0
-
-    const agentsWithPercentage = sortedAgents.map((item) => ({
+    // Calculate percentages for deposits
+    const maxDeposit = sortedDepositAgents.length > 0 ? sortedDepositAgents[0].value : 0
+    const depositAgentsWithPercentage = sortedDepositAgents.map((item) => ({
       ...item,
       percentage: maxDeposit > 0 ? (item.value / maxDeposit) * 100 : 0,
     }))
 
-    setTopAgents(agentsWithPercentage)
-  }, [deposits, clients, selectedMonth])
+    setTopDepositAgents(depositAgentsWithPercentage)
+
+    // Create withdrawal leaderboard
+    const sortedWithdrawalAgents = Object.entries(agentWithdrawals)
+      .map(([agent, value]) => ({
+        agent,
+        value,
+        clientCount: agentClients[agent].size,
+        depositAmount: agentDeposits[agent] || 0,
+        newClientsCount: agentNewClients[agent] || 0,
+      }))
+      .filter((agent) => agent.value > 0) // Only show agents with withdrawals
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+
+    // Calculate percentages for withdrawals
+    const maxWithdrawal = sortedWithdrawalAgents.length > 0 ? sortedWithdrawalAgents[0].value : 0
+    const withdrawalAgentsWithPercentage = sortedWithdrawalAgents.map((item) => ({
+      ...item,
+      percentage: maxWithdrawal > 0 ? (item.value / maxWithdrawal) * 100 : 0,
+    }))
+
+    setTopWithdrawalAgents(withdrawalAgentsWithPercentage)
+
+    // Create new clients leaderboard
+    const sortedNewClientAgents = Object.entries(agentNewClients)
+      .map(([agent, value]) => ({
+        agent,
+        value,
+        clientCount: agentClients[agent].size,
+        depositAmount: agentDeposits[agent] || 0,
+        withdrawalAmount: agentWithdrawals[agent] || 0,
+      }))
+      .filter((agent) => agent.value > 0) // Only show agents with new clients
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+
+    // Calculate percentages for new clients
+    const maxNewClients = sortedNewClientAgents.length > 0 ? sortedNewClientAgents[0].value : 0
+    const newClientAgentsWithPercentage = sortedNewClientAgents.map((item) => ({
+      ...item,
+      percentage: maxNewClients > 0 ? (item.value / maxNewClients) * 100 : 0,
+    }))
+
+    setTopNewClientAgents(newClientAgentsWithPercentage)
+  }, [deposits, clients, withdrawals, selectedMonth])
 
   useEffect(() => {
-    if (!clients || !orders || !deposits || !withdrawals) return
+    if (!clients || !orders || !deposits || !withdrawals || !orderRequests) return
 
     const { startDate, endDate } = getDateRangeFromFilter(globalMonthFilter)
 
@@ -191,6 +274,7 @@ export default function DashboardComponent() {
     const totalWithdrawals = withdrawals.reduce((sum, w) => sum + w.amount, 0)
     const activeClients = clients.filter((c) => c.status === "Active").length
     const inactiveClients = clients.filter((c) => c.status !== "Active").length
+    const approved = orderRequests.filter((req) => req.status === "Approved").length
 
     // Calculate filtered stats
     const periodDeposits = filteredDeposits.reduce((sum, d) => sum + d.amount, 0)
@@ -206,7 +290,7 @@ export default function DashboardComponent() {
       activeClients,
       inactiveClients,
       pendingRequests: stats.pendingRequests,
-      approvedRequests: stats.approvedRequests,
+      approvedRequests: approved,
       rejectedRequests: rejected,
       monthlyDeposits: periodDeposits,
       monthlyWithdrawals: periodWithdrawals,
@@ -351,6 +435,122 @@ export default function DashboardComponent() {
     const monthsAgo = Number.parseInt(value)
     const date = subMonths(new Date(), monthsAgo)
     return format(date, "MMMM yyyy")
+  }
+
+  // Render leaderboard component
+  const renderLeaderboard = (
+    agents: any[],
+    title: string,
+    gradientColors: string,
+    primaryMetric: string,
+    icon: any,
+  ) => {
+    if (agents.length === 0) {
+      return (
+        <div className="py-8 text-center text-muted-foreground">
+          <p>No {primaryMetric.toLowerCase()} data available for this period</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-card shadow-sm">
+          <div className={`${gradientColors} p-1 text-center`}>
+            <h3 className="text-white font-bold text-lg tracking-wide">{title}</h3>
+          </div>
+          <div className="divide-y divide-slate-200 dark:divide-slate-700">
+            {agents.slice(0, 10).map((agent, index) => {
+              const rank = index + 1
+              const rankName = getRankName(rank)
+              const rankTextColor = getRankTextColor(rank)
+
+              return (
+                <div
+                  key={agent.agent}
+                  className="flex items-center p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                >
+                  {/* Rank Badge */}
+                  <RankBadge rank={rank} className="mr-3" />
+
+                  {/* Agent Info */}
+                  <div className="flex flex-1 items-center">
+                    <Avatar className="h-10 w-10 mr-3 border-2 border-white shadow-sm">
+                      <AvatarFallback className={getAgentColor(agent.agent)}>
+                        {agent.agent.substring(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className={`font-medium ${rankTextColor}`}>{agent.agent}</p>
+                      <div className="flex items-center space-x-2 flex-wrap gap-1">
+                        <span className="text-xs text-muted-foreground">{agent.clientCount} clients</span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 ${rankTextColor}`}
+                        >
+                          {rankName}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Value/Amount */}
+                  <div className="text-right">
+                    <div className={`font-bold ${rankTextColor} flex items-center gap-1 justify-end`}>
+                      {icon}
+                      {primaryMetric === "new clients" ? `${agent.value} Open Account` : formatCurrency(agent.value)}
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          rank === 1
+                            ? primaryMetric === "deposits"
+                              ? "bg-gradient-to-r from-purple-500 to-yellow-400"
+                              : primaryMetric === "withdrawals"
+                                ? "bg-gradient-to-r from-red-500 to-orange-400"
+                                : "bg-gradient-to-r from-green-500 to-emerald-400"
+                            : rank === 2
+                              ? primaryMetric === "deposits"
+                                ? "bg-gradient-to-r from-pink-500 to-yellow-400"
+                                : primaryMetric === "withdrawals"
+                                  ? "bg-gradient-to-r from-orange-500 to-red-400"
+                                  : "bg-gradient-to-r from-teal-500 to-cyan-400"
+                              : rank === 3
+                                ? primaryMetric === "deposits"
+                                  ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                  : primaryMetric === "withdrawals"
+                                    ? "bg-gradient-to-r from-yellow-500 to-orange-400"
+                                    : "bg-gradient-to-r from-cyan-500 to-blue-400"
+                                : rank === 4
+                                  ? primaryMetric === "deposits"
+                                    ? "bg-gradient-to-r from-teal-500 to-emerald-400"
+                                    : primaryMetric === "withdrawals"
+                                      ? "bg-gradient-to-r from-pink-500 to-red-400"
+                                      : "bg-gradient-to-r from-blue-500 to-indigo-400"
+                                  : rank === 5
+                                    ? primaryMetric === "deposits"
+                                      ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                                      : primaryMetric === "withdrawals"
+                                        ? "bg-gradient-to-r from-purple-500 to-pink-400"
+                                        : "bg-gradient-to-r from-indigo-500 to-violet-400"
+                                    : primaryMetric === "deposits"
+                                      ? "bg-blue-500"
+                                      : primaryMetric === "withdrawals"
+                                        ? "bg-red-500"
+                                        : "bg-green-500"
+                        }`}
+                        style={{ width: `${agent.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -558,82 +758,50 @@ export default function DashboardComponent() {
             <CardContent className="pt-4">
               {showRankInfo ? (
                 <RankShowcase />
-              ) : topAgents.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Top 5 Leaderboard */}
-                  <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-card shadow-sm">
-                    <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 text-center">
-                      <h3 className="text-white font-bold text-lg tracking-wide">TOP PERFORMERS LEADERBOARD</h3>
-                    </div>
-                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                      {topAgents.slice(0, 10).map((agent, index) => {
-                        // Get rank based on position
-                        const rank = index + 1
-                        const rankName = getRankName(rank)
-                        const rankTextColor = getRankTextColor(rank)
-
-                        return (
-                          <div
-                            key={agent.agent}
-                            className="flex items-center p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                          >
-                            {/* Rank Badge */}
-                            <RankBadge rank={rank} className="mr-3" />
-
-                            {/* Agent Info */}
-                            <div className="flex flex-1 items-center">
-                              <Avatar className="h-10 w-10 mr-3 border-2 border-white shadow-sm">
-                                <AvatarFallback className={getAgentColor(agent.agent)}>
-                                  {agent.agent.substring(0, 2)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className={`font-medium ${rankTextColor}`}>{agent.agent}</p>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-muted-foreground">{agent.clientCount} clients</span>
-                                  <span
-                                    className={`text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 ${rankTextColor}`}
-                                  >
-                                    {rankName}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Value/Amount */}
-                            <div className="text-right">
-                              <div className={`font-bold ${rankTextColor}`}>{formatCurrency(agent.value)}</div>
-
-                              {/* Progress bar */}
-                              <div className="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
-                                <div
-                                  className={`h-full ${
-                                    rank === 1
-                                      ? "bg-gradient-to-r from-purple-500 to-yellow-400"
-                                      : rank === 2
-                                        ? "bg-gradient-to-r from-pink-500 to-yellow-400"
-                                        : rank === 3
-                                          ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                                          : rank === 4
-                                            ? "bg-gradient-to-r from-teal-500 to-emerald-400"
-                                            : rank === 5
-                                              ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                                              : "bg-blue-500"
-                                  }`}
-                                  style={{ width: `${agent.percentage}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
-                  <p>No agent data available for this period</p>
-                </div>
+                <Tabs defaultValue="deposits" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="deposits" className="flex items-center gap-2">
+                      Deposits
+                    </TabsTrigger>
+                    <TabsTrigger value="withdrawals" className="flex items-center gap-2">
+                      Withdrawals
+                    </TabsTrigger>
+                    <TabsTrigger value="openaccount" className="flex items-center gap-2">
+                      Open Account
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="deposits" className="space-y-4 animate-slide-in">
+                    {renderLeaderboard(
+                      topDepositAgents,
+                      "TOP DEPOSITS LEADERBOARD",
+                      "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
+                      "deposits",
+                      <DollarSign className="h-4 w-4" />,
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="withdrawals" className="space-y-4 animate-slide-in">
+                    {renderLeaderboard(
+                      topWithdrawalAgents,
+                      "TOP WITHDRAWALS LEADERBOARD",
+                      "bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500",
+                      "withdrawals",
+                      <DollarSign className="h-4 w-4" />,
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="openaccount" className="space-y-4 animate-slide-in">
+                    {renderLeaderboard(
+                      topNewClientAgents,
+                      "TOP OPEN ACCOUNT LEADERBOARD",
+                      "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500",
+                      "new clients",
+                      <Users className="h-4 w-4" />,
+                    )}
+                  </TabsContent>
+                </Tabs>
               )}
             </CardContent>
             <CardFooter className="pt-0">

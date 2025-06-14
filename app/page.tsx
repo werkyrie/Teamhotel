@@ -17,6 +17,7 @@ import { useAuth } from "@/context/auth-context"
 import ReportsPage from "@/components/reports/reports-page"
 import InventoryPage from "@/components/inventory/inventory-page"
 import VideoCallTemplate from "@/components/videocall/video-call-template"
+import AnnouncementManagement from "@/components/announcements/announcement-management"
 
 export default function Home() {
   const searchParams = useSearchParams()
@@ -111,6 +112,10 @@ export default function Home() {
 
           <TabsContent value="videocall" className="mt-0">
             <VideoCallTemplate />
+          </TabsContent>
+
+          <TabsContent value="announcements" className="mt-0">
+            <AnnouncementManagement />
           </TabsContent>
         </Tabs>
       </main>

@@ -11,7 +11,17 @@ import { useAuth } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import type { Client } from "@/types/client"
 import { db } from "@/lib/firebase"
-import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "firebase/firestore"
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  getDoc,
+  setDoc,
+} from "firebase/firestore"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Sample agent names - we'll use these for display and tracking
@@ -988,6 +998,63 @@ export default function AgentAssignmentDashboard() {
     })
   }
 
+  // Save top agent title to Firestore
+  const saveTopAgentTitle = async (title: string) => {
+    if (!user) {
+      // Fallback to localStorage if not authenticated
+      localStorage.setItem("topAgentTitle", title)
+      return
+    }
+
+    try {
+      await setDoc(doc(db, "settings", "topAgentTitle"), {
+        title,
+        updatedAt: serverTimestamp(),
+        updatedBy: user.email,
+      })
+
+      toast({
+        title: "Title Updated",
+        description: "Top agent title has been saved successfully",
+      })
+    } catch (error) {
+      console.error("Error saving top agent title:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save title",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Load top agent title from Firestore on component mount
+  useEffect(() => {
+    if (!user) return
+
+    const loadTopAgentTitle = async () => {
+      try {
+        const titleDoc = await getDoc(doc(db, "settings", "topAgentTitle"))
+        if (titleDoc.exists()) {
+          setTopAgentTitle(titleDoc.data().title || "TOP PERFORMING AGENT")
+        }
+      } catch (error) {
+        console.error("Error loading top agent title:", error)
+      }
+    }
+
+    loadTopAgentTitle()
+  }, [user])
+
+  // Load title from localStorage as fallback
+  useEffect(() => {
+    if (!user) {
+      const savedTitle = localStorage.getItem("topAgentTitle")
+      if (savedTitle) {
+        setTopAgentTitle(savedTitle)
+      }
+    }
+  }, [user])
+
   // Export Options Modal
   const ExportOptionsModal = () =>
     showExportModal && (
@@ -1204,7 +1271,15 @@ export default function AgentAssignmentDashboard() {
                   autoFocus
                 />
                 <div className="flex space-x-1">
-                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setIsEditingTitle(false)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={async () => {
+                      await saveTopAgentTitle(topAgentTitle)
+                      setIsEditingTitle(false)
+                    }}
+                  >
                     ✓
                   </Button>
                   <Button

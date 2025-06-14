@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import { useClientContext } from "@/context/client-context"
@@ -28,8 +28,8 @@ import {
   ReceiptText,
   LineChart,
   Cog,
-  LayoutDashboard,
   Video,
+  Megaphone,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -309,119 +309,16 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           label: "Settings",
           icon: <Settings className="h-6 w-6" />,
         },
+        {
+          id: "announcements",
+          label: "Announcements",
+          icon: <Megaphone className="h-6 w-6" />,
+        },
       ],
     },
   ]
 
-  const navigationSections = useMemo(
-    () => [
-      {
-        title: "Dashboard",
-        items: [
-          {
-            icon: LayoutDashboard,
-            label: "Dashboard",
-            tab: "dashboard",
-            onClick: () => handleTabChange("dashboard"),
-          },
-          {
-            icon: Video,
-            label: "Video Call Template",
-            tab: "videocall",
-            onClick: () => handleTabChange("videocall"),
-          },
-        ],
-      },
-      {
-        title: "Client Data",
-        items: [
-          {
-            icon: Users,
-            label: "Clients",
-            tab: "clients",
-            onClick: () => handleTabChange("clients"),
-          },
-        ],
-      },
-      {
-        title: "Transactions",
-        items: [
-          {
-            icon: ShoppingBag,
-            label: "Orders",
-            tab: "orders",
-            onClick: () => handleTabChange("orders"),
-          },
-          {
-            icon: FileText,
-            label: "Order Requests",
-            tab: "order-requests",
-            onClick: () => handleTabChange("order-requests"),
-            badge:
-              pendingOrderRequests > 0 ? (
-                <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
-                  {pendingOrderRequests}
-                </span>
-              ) : null,
-          },
-          {
-            icon: Wallet,
-            label: "Deposits",
-            tab: "deposits",
-            onClick: () => handleTabChange("deposits"),
-          },
-          {
-            icon: ArrowDownCircle,
-            label: "Withdrawals",
-            tab: "withdrawals",
-            onClick: () => handleTabChange("withdrawals"),
-          },
-        ],
-      },
-      {
-        title: "Analytics",
-        items: [
-          {
-            icon: BarChart3,
-            label: "Team Performance",
-            tab: "team",
-            onClick: () => handleTabChange("team"),
-          },
-          {
-            icon: FileText,
-            label: "Reports",
-            tab: "reports",
-            onClick: () => handleTabChange("reports"),
-          },
-          {
-            icon: Database,
-            label: "Inventory",
-            tab: "inventory",
-            onClick: () => handleTabChange("inventory"),
-          },
-          {
-            icon: Users,
-            label: "Added Clients",
-            tab: "addedclients",
-            onClick: () => handleTabChange("addedclients"),
-          },
-        ],
-      },
-      {
-        title: "System",
-        items: [
-          {
-            icon: Settings,
-            label: "Settings",
-            tab: "settings",
-            onClick: () => handleTabChange("settings"),
-          },
-        ],
-      },
-    ],
-    [pendingOrderRequests, handleTabChange],
-  )
-
+  // Rest of the component remains the same...
   // Mobile sidebar using Sheet component
   if (isMobile) {
     return (

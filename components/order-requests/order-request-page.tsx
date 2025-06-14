@@ -36,7 +36,7 @@ export default function OrderRequestPage() {
         <h2 className="text-2xl font-bold">Order Requests</h2>
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
-            onClick={() => window.open("https://ordersbalance.netlify.app/", "_blank")}
+            onClick={() => window.open("https://ordersbalance.netlify.app/?view=public", "_blank")}
             variant="secondary"
             className="flex items-center"
           >

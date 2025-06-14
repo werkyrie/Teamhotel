@@ -4,12 +4,16 @@ import { useState, useEffect } from "react"
 import { useClientContext } from "@/context/client-context"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, ClipboardList } from "lucide-react"
+import { Search, Filter, ClipboardList, Grid3X3, List, LayoutGrid, Rows3 } from "lucide-react"
 import OrderRequestCard from "./order-request-card"
 import type { OrderRequest, OrderRequestStatus } from "@/types/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import { formatCurrency, formatDate } from "@/lib/utils"
+
+type ViewMode = "grid" | "compact" | "list" | "dense"
 
 export default function OrderRequestList() {
   const { orderRequests } = useClientContext()
@@ -19,10 +23,11 @@ export default function OrderRequestList() {
   const [showFilters, setShowFilters] = useState(false)
   const [locationFilter, setLocationFilter] = useState<string>("all")
   const [agentFilter, setAgentFilter] = useState<string>("all")
+  const [viewMode, setViewMode] = useState<ViewMode>("grid")
 
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 12
+  const itemsPerPage = viewMode === "dense" ? 20 : viewMode === "compact" ? 16 : 12
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage)
 
   // Get current page items
@@ -81,6 +86,130 @@ export default function OrderRequestList() {
     setCurrentPage(1)
   }, [orderRequests, searchTerm, statusFilter, locationFilter, agentFilter])
 
+  // Reset to first page when view mode changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [viewMode])
+
+  // Get status badge variant
+  const getStatusVariant = (status: OrderRequestStatus): string => {
+    switch (status) {
+      case "Pending":
+        return "pending"
+      case "Approved":
+        return "approved"
+      case "Rejected":
+        return "rejected"
+      default:
+        return "outline"
+    }
+  }
+
+  // Render different view modes
+  const renderViewContent = () => {
+    if (viewMode === "list") {
+      return (
+        <div className="space-y-2">
+          {currentItems.map((request) => (
+            <Card key={request.id} className="p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-semibold text-sm">{request.clientName}</h3>
+                      <Badge variant={getStatusVariant(request.status as OrderRequestStatus)} className="text-xs">
+                        {request.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Shop ID: {request.shopId}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-sm">{formatCurrency(request.price || 0)}</p>
+                    <p className="text-xs text-muted-foreground">{request.location}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">{request.agent}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(request.date)}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )
+    }
+
+    if (viewMode === "compact") {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {currentItems.map((request) => (
+            <Card key={request.id} className="p-3 hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm truncate">{request.clientName}</h3>
+                  <Badge variant={getStatusVariant(request.status as OrderRequestStatus)} className="text-xs">
+                    {request.status}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">ID: {request.shopId}</p>
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium">{formatCurrency(request.price || 0)}</span>
+                  <span className="text-muted-foreground">{request.location}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{request.agent}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )
+    }
+
+    if (viewMode === "dense") {
+      return (
+        <div className="space-y-1">
+          <div className="grid grid-cols-12 gap-2 p-2 bg-muted/50 rounded text-xs font-medium">
+            <div className="col-span-2">Client</div>
+            <div className="col-span-2">Shop ID</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-2">Price</div>
+            <div className="col-span-2">Location</div>
+            <div className="col-span-2">Agent</div>
+            <div className="col-span-1">Date</div>
+          </div>
+          {currentItems.map((request) => (
+            <div key={request.id} className="grid grid-cols-12 gap-2 p-2 hover:bg-muted/30 rounded text-xs border-b">
+              <div className="col-span-2 font-medium truncate">{request.clientName}</div>
+              <div className="col-span-2 text-muted-foreground truncate">{request.shopId}</div>
+              <div className="col-span-1">
+                <Badge variant={getStatusVariant(request.status as OrderRequestStatus)} className="text-xs py-0 px-1">
+                  {request.status}
+                </Badge>
+              </div>
+              <div className="col-span-2 font-medium">{formatCurrency(request.price || 0)}</div>
+              <div className="col-span-2 text-muted-foreground truncate">{request.location}</div>
+              <div className="col-span-2 text-muted-foreground truncate">{request.agent}</div>
+              <div className="col-span-1 text-muted-foreground">{formatDate(request.date)}</div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Default grid view
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {currentItems.map((request) => (
+          <div
+            key={request.id}
+            className={cn("transition-all duration-500", request.status === "Pending" && "animate-pending-pulse")}
+          >
+            <OrderRequestCard request={request} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4">
@@ -115,6 +244,54 @@ export default function OrderRequestList() {
           >
             <Filter className="h-4 w-4" />
           </Button>
+        </div>
+      </div>
+
+      {/* View Mode Selector */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">View:</span>
+          <div className="flex border rounded-lg p-1">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="h-8 px-3"
+            >
+              <Grid3X3 className="h-4 w-4 mr-1" />
+              Grid
+            </Button>
+            <Button
+              variant={viewMode === "compact" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("compact")}
+              className="h-8 px-3"
+            >
+              <LayoutGrid className="h-4 w-4 mr-1" />
+              Compact
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="h-8 px-3"
+            >
+              <List className="h-4 w-4 mr-1" />
+              List
+            </Button>
+            <Button
+              variant={viewMode === "dense" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("dense")}
+              className="h-8 px-3"
+            >
+              <Rows3 className="h-4 w-4 mr-1" />
+              Dense
+            </Button>
+          </div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {filteredRequests.length} request{filteredRequests.length !== 1 ? "s" : ""}
         </div>
       </div>
 
@@ -154,16 +331,7 @@ export default function OrderRequestList() {
 
       {filteredRequests.length > 0 ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {currentItems.map((request) => (
-              <div
-                key={request.id}
-                className={cn("transition-all duration-500", request.status === "Pending" && "animate-pending-pulse")}
-              >
-                <OrderRequestCard request={request} />
-              </div>
-            ))}
-          </div>
+          {renderViewContent()}
 
           {/* Pagination controls */}
           {totalPages > 1 && (
