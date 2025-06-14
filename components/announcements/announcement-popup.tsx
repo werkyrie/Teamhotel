@@ -52,8 +52,8 @@ export default function AnnouncementPopup() {
 
   const Icon = typeIcons[activeAnnouncement.type]
 
-  const handleDismiss = () => {
-    dismissAnnouncement(activeAnnouncement.id)
+  const handleDismiss = async () => {
+    await dismissAnnouncement(activeAnnouncement.id)
     setIsVisible(false)
   }
 
