@@ -2,18 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  query,
-  orderBy,
-  setDoc,
-  getDoc,
-} from "firebase/firestore"
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
@@ -38,30 +27,17 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [activeAnnouncement, setActiveAnnouncement] = useState<Announcement | null>(null)
   const [loading, setLoading] = useState(true)
-  const [userDismissedAnnouncements, setUserDismissedAnnouncements] = useState<string[]>([])
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([])
   const { user, isAdmin } = useAuth()
   const { toast } = useToast()
 
-  // Load user-specific dismissed announcements from Firestore
+  // Load dismissed announcements from localStorage
   useEffect(() => {
-    if (!user) return
-
-    const loadUserDismissedAnnouncements = async () => {
-      try {
-        const userDocRef = doc(db, "userSettings", user.uid)
-        const userDoc = await getDoc(userDocRef)
-
-        if (userDoc.exists()) {
-          const data = userDoc.data()
-          setUserDismissedAnnouncements(data.dismissedAnnouncements || [])
-        }
-      } catch (error) {
-        console.error("Error loading dismissed announcements:", error)
-      }
+    const dismissed = localStorage.getItem("dismissedAnnouncements")
+    if (dismissed) {
+      setDismissedAnnouncements(JSON.parse(dismissed))
     }
-
-    loadUserDismissedAnnouncements()
-  }, [user])
+  }, [])
 
   // Listen to announcements from Firestore
   useEffect(() => {
@@ -88,15 +64,10 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
 
         // Find active announcement for non-admin users
         if (!isAdmin) {
-          const active = announcementData.find(
-            (ann) =>
-              ann.isActive &&
-              (!ann.expiresAt || ann.expiresAt > new Date()) &&
-              !userDismissedAnnouncements.includes(ann.id),
-          )
+          const active = announcementData.find((ann) => ann.isActive && (!ann.expiresAt || ann.expiresAt > new Date()))
           console.log("Setting active announcement for viewer:", active)
           console.log("User is admin:", isAdmin)
-          console.log("User dismissed announcements:", userDismissedAnnouncements)
+          console.log("All announcements:", announcementData)
           setActiveAnnouncement(active || null)
         }
 
@@ -109,7 +80,7 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
     )
 
     return () => unsubscribe()
-  }, [user, isAdmin, userDismissedAnnouncements])
+  }, [user, isAdmin])
 
   const createAnnouncement = async (data: AnnouncementFormData) => {
     if (!user || !isAdmin) {
@@ -261,40 +232,19 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
     }
   }
 
-  const dismissAnnouncement = async (id: string) => {
-    if (!user) return
+  const dismissAnnouncement = (id: string) => {
+    const newDismissed = [...dismissedAnnouncements, id]
+    setDismissedAnnouncements(newDismissed)
+    localStorage.setItem("dismissedAnnouncements", JSON.stringify(newDismissed))
 
-    try {
-      const newDismissed = [...userDismissedAnnouncements, id]
-      setUserDismissedAnnouncements(newDismissed)
-
-      // Save to Firestore
-      const userDocRef = doc(db, "userSettings", user.uid)
-      await setDoc(
-        userDocRef,
-        {
-          dismissedAnnouncements: newDismissed,
-          updatedAt: new Date(),
-        },
-        { merge: true },
-      )
-
-      // Hide the active announcement if it's the one being dismissed
-      if (activeAnnouncement?.id === id) {
-        setActiveAnnouncement(null)
-      }
-    } catch (error) {
-      console.error("Error dismissing announcement:", error)
-      toast({
-        title: "Error",
-        description: "Failed to dismiss announcement",
-        variant: "destructive",
-      })
+    // Hide the active announcement if it's the one being dismissed
+    if (activeAnnouncement?.id === id) {
+      setActiveAnnouncement(null)
     }
   }
 
   const isDismissed = (id: string) => {
-    return userDismissedAnnouncements.includes(id)
+    return dismissedAnnouncements.includes(id)
   }
 
   const value = {

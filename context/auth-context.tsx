@@ -114,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             router.push("/login?timeout=true")
           }
         } else {
-          // Regular 30-minute session timeout
-          if (Date.now() - lastActivity > 30 * 60 * 1000) {
+          // Regular 4-hour session timeout instead of 30 minutes
+          if (Date.now() - lastActivity > 4 * 60 * 60 * 1000) {
             logout()
             router.push("/login?timeout=true")
           }
@@ -129,8 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("click", checkActivity)
     window.addEventListener("scroll", checkActivity)
 
-    // Check session timeout every minute
-    const interval = setInterval(checkSessionTimeout, 60000)
+    // Check session timeout every 5 minutes instead of every minute
+    const interval = setInterval(checkSessionTimeout, 5 * 60000)
 
     return () => {
       window.removeEventListener("mousemove", checkActivity)
@@ -152,7 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // This is handled by the session timeout logic
         setLastActivity(Date.now())
         localStorage.setItem("rememberMe", "true")
-        localStorage.setItem("rememberMeExpiry", (Date.now() + 5 * 24 * 60 * 60 * 1000).toString())
+        // Set remember me expiry to 30 days instead of 5 days
+        localStorage.setItem("rememberMeExpiry", (Date.now() + 30 * 24 * 60 * 60 * 1000).toString())
       } else {
         localStorage.removeItem("rememberMe")
         localStorage.removeItem("rememberMeExpiry")
