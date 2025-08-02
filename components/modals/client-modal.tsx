@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useClientContext } from "@/context/client-context"
 import { useAuth } from "@/context/auth-context"
+import { useTeamContext } from "@/context/team-context"
 import type { Client, Agent, ClientStatus, Order, Deposit, Withdrawal } from "@/types/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,25 +44,6 @@ import {
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// Default agents
-const DEFAULT_AGENTS = [
-  "KY",
-  "LOVELY",
-  "JHE",
-  "VIVIAN",
-  "UNO",
-  "ANA",
-  "AVIANA",
-  "KEL",
-  "CU",
-  "ANNIE",
-  "KEN",
-  "CINDY",
-  "MAR",
-  "PRIMO",
-  "THAC",
-]
-
 interface ClientModalProps {
   mode: "add" | "view" | "edit"
   client: Client | null
@@ -72,6 +54,7 @@ interface ClientModalProps {
 export default function ClientModal({ mode, client, isOpen, onClose }: ClientModalProps) {
   const { toast } = useToast()
   const { isViewer } = useAuth()
+  const { agents } = useTeamContext()
   const {
     clients,
     orders,
@@ -98,13 +81,10 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
   // Form state
   const [shopId, setShopId] = useState("")
   const [clientName, setClientName] = useState("")
-  const [agent, setAgent] = useState<Agent>("KY")
+  const [agent, setAgent] = useState<Agent>("")
   const [kycDate, setKycDate] = useState<Date | undefined>(new Date())
   const [status, setStatus] = useState<ClientStatus>("In Process")
   const [notes, setNotes] = useState("")
-  const [agents, setAgents] = useState<string[]>(DEFAULT_AGENTS)
-  const [newAgent, setNewAgent] = useState("")
-  const [showAddAgent, setShowAddAgent] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Client orders, deposits, and withdrawals
@@ -142,7 +122,6 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
   // Validation state
   const [shopIdError, setShopIdError] = useState("")
   const [clientNameError, setClientNameError] = useState("")
-  const [newAgentError, setNewAgentError] = useState("")
   const [formSubmitting, setFormSubmitting] = useState(false)
 
   // Financial summary
@@ -154,19 +133,8 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
   // Combined transactions for unified view
   const [allTransactions, setAllTransactions] = useState<Array<Order | Deposit | (Withdrawal & { type: string })>>([])
 
-  // Load custom agents from localStorage
+  // Set loading to false after a short delay to simulate data loading
   useEffect(() => {
-    try {
-      const savedAgents = localStorage.getItem("customAgents")
-      if (savedAgents) {
-        const customAgents = JSON.parse(savedAgents)
-        setAgents([...DEFAULT_AGENTS, ...customAgents])
-      }
-    } catch (error) {
-      console.error("Error parsing custom agents:", error)
-    }
-
-    // Set loading to false after a short delay to simulate data loading
     const timer = setTimeout(() => {
       setLoading(false)
     }, 500)
@@ -182,7 +150,7 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
       try {
         setShopId(client.shopId || "")
         setClientName(client.clientName || "")
-        setAgent(client.agent || "KY")
+        setAgent(client.agent || (agents.length > 0 ? agents[0].name : ""))
         setKycDate(client.kycDate ? new Date(client.kycDate) : undefined)
         setStatus(client.status || "In Process")
         setNotes(client.notes || "")
@@ -244,7 +212,7 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
       // Reset form for add mode
       setShopId("")
       setClientName("")
-      setAgent("KY")
+      setAgent(agents.length > 0 ? agents[0].name : "")
       setKycDate(new Date())
       setStatus("In Process")
       setNotes("")
@@ -258,7 +226,7 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
       setBalance(0)
       setLoading(false)
     }
-  }, [client, orders, deposits, withdrawals])
+  }, [client, orders, deposits, withdrawals, agents])
 
   // Filter transactions based on search, type, and timeframe
   useEffect(() => {
@@ -414,50 +382,6 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
 
     setClientNameError("")
     return true
-  }
-
-  // Validate new agent
-  const validateNewAgent = (name: string) => {
-    if (!name) {
-      setNewAgentError("Agent name is required")
-      return false
-    }
-
-    if (agents.includes(name)) {
-      setNewAgentError("Agent already exists")
-      return false
-    }
-
-    setNewAgentError("")
-    return true
-  }
-
-  // Handle adding a new agent
-  const handleAddAgent = () => {
-    if (!validateNewAgent(newAgent)) {
-      return
-    }
-
-    // Add to agents list
-    const updatedAgents = [...agents, newAgent]
-    setAgents(updatedAgents)
-
-    // Set as current agent
-    setAgent(newAgent)
-
-    // Save custom agents to localStorage
-    const customAgents = updatedAgents.filter((a) => !DEFAULT_AGENTS.includes(a))
-    localStorage.setItem("customAgents", JSON.stringify(customAgents))
-
-    // Reset form
-    setNewAgent("")
-    setShowAddAgent(false)
-
-    toast({
-      title: "Agent added",
-      description: `Agent ${newAgent} has been added successfully.`,
-      variant: "success",
-    })
   }
 
   // Handle form submission
@@ -1331,60 +1255,28 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="agent">Agent</Label>
-                {!isViewer && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAddAgent(!showAddAgent)}
-                    className="h-6 px-2 text-xs"
-                  >
-                    <UserPlus className="h-3 w-3 mr-1" />
-                    Add New
-                  </Button>
-                )}
-              </div>
-
-              {showAddAgent ? (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newAgent}
-                      onChange={(e) => {
-                        setNewAgent(e.target.value)
-                        validateNewAgent(e.target.value)
-                      }}
-                      placeholder="Enter new agent name"
-                      className={newAgentError ? "border-red-500" : ""}
-                    />
-                    <Button onClick={handleAddAgent} size="sm">
-                      Add
-                    </Button>
-                    <Button onClick={() => setShowAddAgent(false)} variant="outline" size="sm">
-                      Cancel
-                    </Button>
-                  </div>
-                  {newAgentError && (
-                    <div className="text-sm text-red-500 flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {newAgentError}
-                    </div>
-                  )}
-                </div>
-              ) : (
+              <Label htmlFor="agent">Agent</Label>
+              {agents.length > 0 ? (
                 <Select value={agent} onValueChange={(value) => setAgent(value)} disabled={isViewer}>
                   <SelectTrigger id="agent">
                     <SelectValue placeholder="Select agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    {agents.map((agentName) => (
-                      <SelectItem key={agentName} value={agentName}>
-                        {agentName}
+                    {agents.map((agentData) => (
+                      <SelectItem key={agentData.id} value={agentData.name}>
+                        {agentData.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              ) : (
+                <div className="flex items-center justify-center p-4 border border-dashed border-gray-300 rounded-md">
+                  <div className="text-center">
+                    <UserPlus className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No agents registered</p>
+                    <p className="text-xs text-gray-400">Please register agents first</p>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -1449,7 +1341,7 @@ export default function ClientModal({ mode, client, isOpen, onClose }: ClientMod
             {mode === "view" ? "Close" : "Cancel"}
           </Button>
           {mode !== "view" && !isViewer && (
-            <Button onClick={handleSubmit} disabled={formSubmitting}>
+            <Button onClick={handleSubmit} disabled={formSubmitting || agents.length === 0}>
               {formSubmitting ? (
                 <>
                   <span className="animate-spin mr-2">⏳</span>

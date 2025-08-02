@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { auth, db } from "@/lib/firebase"
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updatePassword,
@@ -21,12 +22,23 @@ export interface AppUser {
   email: string
   role: UserRole
   displayName?: string
+  nickname?: string
+  approved?: boolean
+}
+
+// Registration data interface
+export interface RegistrationData {
+  email: string
+  password: string
+  nickname: string
+  role: "Regular" | "Elite" | "Team Leader" | "Spammer"
 }
 
 // Auth context interface
 interface AuthContextType {
   user: AppUser | null
   login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message: string }>
+  register: (data: RegistrationData) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
   isAuthenticated: boolean
   isAdmin: boolean
@@ -59,19 +71,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
           if (userDoc.exists()) {
             const userData = userDoc.data()
+
+            // Check if user is approved
+            if (userData.approved === false) {
+              await firebaseSignOut(auth)
+              setUser(null)
+              setLoginError("Your account is pending admin approval. Please wait for approval before logging in.")
+              return
+            }
+
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email || "",
               role: userData.role as UserRole,
               displayName: userData.displayName || firebaseUser.displayName || "",
+              nickname: userData.nickname || userData.displayName || firebaseUser.displayName || "",
+              approved: userData.approved !== false,
             })
           } else {
-            // Create user document if it doesn't exist
+            // Create user document if it doesn't exist (for existing users)
             const defaultRole: UserRole = "Viewer"
             await setDoc(doc(db, "users", firebaseUser.uid), {
               email: firebaseUser.email,
               role: defaultRole,
               displayName: firebaseUser.displayName || "",
+              nickname: firebaseUser.displayName || "",
+              approved: true, // Existing users are auto-approved
               createdAt: serverTimestamp(),
             })
 
@@ -80,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: firebaseUser.email || "",
               role: defaultRole,
               displayName: firebaseUser.displayName || "",
+              nickname: firebaseUser.displayName || "",
+              approved: true,
             })
           }
         } catch (error) {
@@ -147,35 +174,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Attempt login with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
+      // Get user data from Firestore to check approval status
+      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid))
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+
+        // Check if user is approved
+        if (userData.approved === false) {
+          await firebaseSignOut(auth)
+          return {
+            success: false,
+            message: "Your account is pending admin approval. Please wait for approval before logging in.",
+          }
+        }
+      } else {
+        // Create user document if it doesn't exist (for existing users)
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: userCredential.user.email,
+          role: "Viewer", // Default role
+          displayName: userCredential.user.displayName || "",
+          nickname: userCredential.user.displayName || "",
+          approved: true, // Existing users are auto-approved
+          createdAt: serverTimestamp(),
+        })
+      }
+
       // Set persistence based on rememberMe
       if (rememberMe) {
-        // This is handled by the session timeout logic
         setLastActivity(Date.now())
         localStorage.setItem("rememberMe", "true")
-        // Set remember me expiry to 30 days instead of 5 days
         localStorage.setItem("rememberMeExpiry", (Date.now() + 30 * 24 * 60 * 60 * 1000).toString())
       } else {
         localStorage.removeItem("rememberMe")
         localStorage.removeItem("rememberMeExpiry")
       }
 
-      // Get user role from Firestore
-      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid))
-
-      if (!userDoc.exists()) {
-        // Create user document if it doesn't exist
-        await setDoc(doc(db, "users", userCredential.user.uid), {
-          email: userCredential.user.email,
-          role: "Viewer", // Default role
-          displayName: userCredential.user.displayName || "",
-          createdAt: serverTimestamp(),
-        })
-      }
-
       return { success: true, message: "Login successful" }
     } catch (error: any) {
-      const errorMessage = error.message || "Invalid email or password."
+      let errorMessage = "Invalid email or password."
+
+      if (error.code === "auth/user-not-found") {
+        errorMessage = "No account found with this email address."
+      } else if (error.code === "auth/wrong-password") {
+        errorMessage = "Incorrect password."
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Please enter a valid email address."
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Too many failed login attempts. Please try again later."
+      }
+
       setLoginError(errorMessage)
+      return { success: false, message: errorMessage }
+    }
+  }
+
+  const register = async (data: RegistrationData) => {
+    try {
+      setLoginError(null)
+
+      // Create user with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password)
+
+      // Create user document in Firestore - no agent role stored since it's removed
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        email: data.email,
+        nickname: data.nickname,
+        displayName: data.nickname,
+        role: "Viewer", // Default role for new registrations
+        approved: false, // Require admin approval
+        createdAt: serverTimestamp(),
+        registrationDate: new Date().toISOString(),
+      })
+
+      // Sign out the user after registration (they need approval)
+      await firebaseSignOut(auth)
+
+      return {
+        success: true,
+        message: "Registration successful! Your account is pending admin approval. You will be notified once approved.",
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error)
+      let errorMessage = "Registration failed. Please try again."
+
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "An account with this email already exists."
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password is too weak. Please choose a stronger password."
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Please enter a valid email address."
+      }
+
       return { success: false, message: errorMessage }
     }
   }
@@ -183,6 +273,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await firebaseSignOut(auth)
+      localStorage.removeItem("rememberMe")
+      localStorage.removeItem("rememberMeExpiry")
       router.push("/login")
     } catch (error) {
       console.error("Error signing out:", error)
@@ -223,6 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         login,
+        register,
         logout,
         isAuthenticated: !!user,
         isAdmin: user?.role === "Admin",

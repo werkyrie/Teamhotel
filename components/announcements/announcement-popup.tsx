@@ -28,7 +28,7 @@ const priorityStyles = {
   high: "border-l-12 shadow-lg",
 }
 
-export default function AnnouncementPopup() {
+export function AnnouncementPopup() {
   const { activeAnnouncement, dismissAnnouncement } = useAnnouncements()
   const { isAdmin } = useAuth()
   const [isVisible, setIsVisible] = useState(false)
@@ -148,3 +148,5 @@ export default function AnnouncementPopup() {
     </div>
   )
 }
+
+export default AnnouncementPopup

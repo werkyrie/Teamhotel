@@ -8,7 +8,6 @@ import { ClientProvider } from "@/context/client-context"
 import { NotificationProvider } from "@/context/notification-context"
 import { AuthProvider } from "@/context/auth-context"
 import { TeamProvider } from "@/context/team-context"
-import FloatingActionButton from "@/components/floating-action-button"
 import { AnnouncementProvider } from "@/context/announcement-context"
 import AnnouncementPopup from "@/components/announcements/announcement-popup"
 
@@ -43,7 +42,6 @@ export default function RootLayout({
                   <AnnouncementProvider>
                     {children}
                     <AnnouncementPopup />
-                    <FloatingActionButton />
                     <Toaster />
                   </AnnouncementProvider>
                 </NotificationProvider>

@@ -1,14 +1,29 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Trash2, Calendar, Users, Trophy, Sparkles, Maximize2, Minimize2, Download } from "lucide-react"
+import {
+  Search,
+  Trash2,
+  Calendar,
+  Users,
+  Trophy,
+  Sparkles,
+  Maximize2,
+  Minimize2,
+  Download,
+  Settings,
+  UserPlus,
+  UserMinus,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { useAuth } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
+import { useTeamContext } from "@/context/team-context"
 import type { Client } from "@/types/client"
 import { db } from "@/lib/firebase"
 import {
@@ -23,9 +38,7 @@ import {
   setDoc,
 } from "firebase/firestore"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-// Sample agent names - we'll use these for display and tracking
-const agents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Interface for the currently edited cell
 interface EditingCell {
@@ -196,14 +209,24 @@ export default function AgentAssignmentDashboard() {
   const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false)
   const [dateFilter, setDateFilter] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showAgentManagement, setShowAgentManagement] = useState(false)
+  const [newAgentName, setNewAgentName] = useState("")
+  const [agents, setAgents] = useState<string[]>([])
+
+  // New states for workload agent management
+  const [showWorkloadAgentManagement, setShowWorkloadAgentManagement] = useState(false)
+  const [workloadAgents, setWorkloadAgents] = useState<string[]>([])
+  const [availableAgents, setAvailableAgents] = useState<string[]>([])
 
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
   const [uniqueApplications, setUniqueApplications] = useState<string[]>([])
 
   const editInputRef = useRef<HTMLInputElement>(null)
+  const agentInputRef = useRef<HTMLInputElement>(null)
 
   const { user } = useAuth()
   const { toast } = useToast()
+  const { agents: teamAgents } = useTeamContext()
 
   // Get current username from email (before @)
   const currentAgent = user?.email ? user.email.split("@")[0] : ""
@@ -241,11 +264,206 @@ export default function AgentAssignmentDashboard() {
     },
   })
 
+  // Load workload agents from Firestore
+  useEffect(() => {
+    if (!user) return
+
+    const loadWorkloadAgents = async () => {
+      try {
+        const workloadAgentsDoc = await getDoc(doc(db, "settings", "workloadAgents"))
+        if (workloadAgentsDoc.exists()) {
+          const workloadAgentsData = workloadAgentsDoc.data().agents
+          if (Array.isArray(workloadAgentsData) && workloadAgentsData.length > 0) {
+            setWorkloadAgents(workloadAgentsData)
+          } else {
+            // If no workload agents are set, use default agents
+            const defaultAgents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+            setWorkloadAgents(defaultAgents)
+            await saveWorkloadAgents(defaultAgents)
+          }
+        } else {
+          // If document doesn't exist, create it with default agents
+          const defaultAgents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+          setWorkloadAgents(defaultAgents)
+          await saveWorkloadAgents(defaultAgents)
+        }
+      } catch (error) {
+        console.error("Error loading workload agents:", error)
+        // Fallback to default agents
+        const defaultAgents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+        setWorkloadAgents(defaultAgents)
+      }
+    }
+
+    loadWorkloadAgents()
+  }, [user])
+
+  // Update available agents when team agents change
+  useEffect(() => {
+    const teamAgentNames = teamAgents.map((agent) => agent.name)
+    const allAgents = [...new Set([...workloadAgents, ...teamAgentNames])]
+    setAvailableAgents(allAgents)
+  }, [teamAgents, workloadAgents])
+
+  // Save workload agents to Firestore
+  const saveWorkloadAgents = async (updatedAgents: string[]) => {
+    if (!user) return
+
+    try {
+      await setDoc(doc(db, "settings", "workloadAgents"), {
+        agents: updatedAgents,
+        updatedAt: serverTimestamp(),
+        updatedBy: user.email,
+      })
+
+      toast({
+        title: "Workload Agents Updated",
+        description: "Workload agent list has been saved successfully",
+      })
+    } catch (error) {
+      console.error("Error saving workload agents:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save workload agents",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Add agent to workload
+  const addAgentToWorkload = async (agentName: string) => {
+    if (workloadAgents.includes(agentName)) {
+      toast({
+        title: "Agent Already Added",
+        description: "This agent is already in the workload section",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const updatedAgents = [...workloadAgents, agentName]
+    setWorkloadAgents(updatedAgents)
+    await saveWorkloadAgents(updatedAgents)
+  }
+
+  // Remove agent from workload
+  const removeAgentFromWorkload = async (agentName: string) => {
+    const updatedAgents = workloadAgents.filter((agent) => agent !== agentName)
+    setWorkloadAgents(updatedAgents)
+    await saveWorkloadAgents(updatedAgents)
+  }
+
+  // Load agents from Firestore
+  useEffect(() => {
+    if (!user) return
+
+    const loadAgents = async () => {
+      try {
+        const agentsDoc = await getDoc(doc(db, "settings", "agents"))
+        if (agentsDoc.exists()) {
+          const agentsData = agentsDoc.data().agents
+          if (Array.isArray(agentsData) && agentsData.length > 0) {
+            setAgents(agentsData)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading agents:", error)
+      }
+    }
+
+    loadAgents()
+  }, [user])
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (showAgentManagement && agentInputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      setTimeout(() => {
+        agentInputRef.current?.focus()
+      }, 100)
+    }
+  }, [showAgentManagement])
+
+  // Save agents to Firestore
+  const saveAgents = async (updatedAgents: string[]) => {
+    if (!user) return
+
+    try {
+      await setDoc(doc(db, "settings", "agents"), {
+        agents: updatedAgents,
+        updatedAt: serverTimestamp(),
+        updatedBy: user.email,
+      })
+
+      toast({
+        title: "Agents Updated",
+        description: "Agent list has been saved successfully",
+      })
+    } catch (error) {
+      console.error("Error saving agents:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save agents",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Add new agent
+  const addAgent = async () => {
+    if (!newAgentName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter an agent name",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (agents.some((agent) => agent.toLowerCase() === newAgentName.toLowerCase())) {
+      toast({
+        title: "Error",
+        description: "Agent already exists",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const updatedAgents = [...agents, newAgentName.trim()]
+    setAgents(updatedAgents)
+    await saveAgents(updatedAgents)
+    setNewAgentName("")
+
+    // Refocus the input after adding
+    setTimeout(() => {
+      agentInputRef.current?.focus()
+    }, 100)
+  }
+
+  // Remove agent
+  const removeAgent = async (agentToRemove: string) => {
+    // Check if agent has assigned clients
+    const hasClients = clients.some((client) => client.assignedAgent.toLowerCase() === agentToRemove.toLowerCase())
+
+    if (hasClients) {
+      toast({
+        title: "Cannot Remove Agent",
+        description: "This agent has assigned clients. Please reassign them first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const updatedAgents = agents.filter((agent) => agent !== agentToRemove)
+    setAgents(updatedAgents)
+    await saveAgents(updatedAgents)
+  }
+
   // Calculate agent workloads
   const calculateAgentWorkloads = (): Record<string, AgentWorkload> => {
     const today = new Date().toISOString().split("T")[0] // Format: YYYY-MM-DD
 
-    return agents.reduce(
+    return workloadAgents.reduce(
       (acc, agent) => {
         const agentName = agent.toLowerCase()
         const agentClients = clients.filter((client) => client.assignedAgent.toLowerCase() === agentName)
@@ -292,7 +510,7 @@ export default function AgentAssignmentDashboard() {
     const sorted = workloads.sort((a, b) => b[1].total - a[1].total)
     if (sorted[0][1].total === 0) return "-"
 
-    return agents.find((a) => a.toLowerCase() === sorted[0][0]) || "-"
+    return workloadAgents.find((a) => a.toLowerCase() === sorted[0][0]) || "-"
   }
 
   const topAgentName = findTopAgent()
@@ -308,7 +526,7 @@ export default function AgentAssignmentDashboard() {
   // Update workloads when date filter changes
   useEffect(() => {
     setAgentWorkloads(calculateAgentWorkloads())
-  }, [dateFilter, clients])
+  }, [dateFilter, clients, workloadAgents])
 
   // Trigger confetti animation when component mounts
   useEffect(() => {
@@ -746,12 +964,6 @@ export default function AgentAssignmentDashboard() {
     setSelectedDate(undefined)
   }
 
-  // Cancel editing
-  const cancelEdit = () => {
-    setEditingCell({ clientId: null, field: null, value: "" })
-    setSelectedDate(undefined)
-  }
-
   // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return
@@ -1058,106 +1270,107 @@ export default function AgentAssignmentDashboard() {
   // Export Options Modal
   const ExportOptionsModal = () =>
     showExportModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 className="text-lg font-semibold mb-4 dark:text-gray-100">Export Options</h3>
+      <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export Options</DialogTitle>
+          </DialogHeader>
 
-          {/* Date Range Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 dark:text-gray-300">Date Range</label>
-            <Select
-              value={exportOptions.dateRange}
-              onValueChange={(value: "all" | "current-month" | "custom") =>
-                setExportOptions((prev) => ({ ...prev, dateRange: value }))
-              }
-            >
-              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="current-month">Current Month</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Custom Date Range */}
-          {exportOptions.dateRange === "custom" && (
-            <div className="mb-4 space-y-2">
-              <div>
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Start Date</label>
-                <Input
-                  type="date"
-                  value={exportOptions.customStartDate}
-                  onChange={(e) => setExportOptions((prev) => ({ ...prev, customStartDate: e.target.value }))}
-                  className="dark:bg-gray-700 dark:border-gray-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">End Date</label>
-                <Input
-                  type="date"
-                  value={exportOptions.customEndDate}
-                  onChange={(e) => setExportOptions((prev) => ({ ...prev, customEndDate: e.target.value }))}
-                  className="dark:bg-gray-700 dark:border-gray-600"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Agent Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 dark:text-gray-300">Agents (leave empty for all)</label>
-            <Select
-              value={exportOptions.selectedAgents.length > 0 ? exportOptions.selectedAgents[0] : "all-agents"}
-              onValueChange={(value) => {
-                if (value === "all-agents") {
-                  setExportOptions((prev) => ({ ...prev, selectedAgents: [] }))
-                } else {
-                  setExportOptions((prev) => ({ ...prev, selectedAgents: [value] }))
+          <div className="space-y-4">
+            {/* Date Range Selection */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Date Range</label>
+              <Select
+                value={exportOptions.dateRange}
+                onValueChange={(value: "all" | "current-month" | "custom") =>
+                  setExportOptions((prev) => ({ ...prev, dateRange: value }))
                 }
-              }}
-            >
-              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
-                <SelectValue placeholder="All Agents" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-agents">All Agents</SelectItem>
-                {agents.map((agent) => (
-                  <SelectItem key={agent} value={agent.toLowerCase()}>
-                    {agent}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="current-month">Current Month</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Column Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2 dark:text-gray-300">Columns to Include</label>
-            <div className="space-y-2">
-              {Object.entries(exportOptions.selectedColumns).map(([key, value]) => (
-                <label key={key} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) =>
-                      setExportOptions((prev) => ({
-                        ...prev,
-                        selectedColumns: { ...prev.selectedColumns, [key]: e.target.checked },
-                      }))
-                    }
-                    className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-700"
+            {/* Custom Date Range */}
+            {exportOptions.dateRange === "custom" && (
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Start Date</label>
+                  <Input
+                    type="date"
+                    value={exportOptions.customStartDate}
+                    onChange={(e) => setExportOptions((prev) => ({ ...prev, customStartDate: e.target.value }))}
                   />
-                  <span className="text-sm dark:text-gray-300 capitalize">{key}</span>
-                </label>
-              ))}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">End Date</label>
+                  <Input
+                    type="date"
+                    value={exportOptions.customEndDate}
+                    onChange={(e) => setExportOptions((prev) => ({ ...prev, customEndDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Agent Selection */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Agents (leave empty for all)</label>
+              <Select
+                value={exportOptions.selectedAgents.length > 0 ? exportOptions.selectedAgents[0] : "all-agents"}
+                onValueChange={(value) => {
+                  if (value === "all-agents") {
+                    setExportOptions((prev) => ({ ...prev, selectedAgents: [] }))
+                  } else {
+                    setExportOptions((prev) => ({ ...prev, selectedAgents: [value] }))
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Agents" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-agents">All Agents</SelectItem>
+                  {workloadAgents.map((agent) => (
+                    <SelectItem key={agent} value={agent.toLowerCase()}>
+                      {agent}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Column Selection */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Columns to Include</label>
+              <div className="space-y-2">
+                {Object.entries(exportOptions.selectedColumns).map(([key, value]) => (
+                  <label key={key} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          selectedColumns: { ...prev.selectedColumns, [key]: e.target.checked },
+                        }))
+                      }
+                      className="rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+                    />
+                    <span className="text-sm capitalize">{key}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowExportModal(false)}>
               Cancel
             </Button>
@@ -1165,10 +1378,14 @@ export default function AgentAssignmentDashboard() {
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
-          </div>
-        </div>
-      </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     )
+
+  const cancelEdit = () => {
+    setEditingCell({ clientId: null, field: null, value: "" })
+  }
 
   return (
     <div className="space-y-6">
@@ -1343,9 +1560,20 @@ export default function AgentAssignmentDashboard() {
 
       {/* Agent Workload Section - Hidden when table is expanded */}
       <div className={`transition-all duration-500 ${isTableExpanded ? "hidden" : "block"}`}>
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2 dark:text-gray-100 dark:border-gray-700">
-          Agent Workload
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold border-b pb-2 dark:text-gray-100 dark:border-gray-700">
+            Agent Workload
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowWorkloadAgentManagement(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Agents
+          </Button>
+        </div>
 
         {/* Legend */}
         <div className="flex items-center justify-between mb-4">
@@ -1384,7 +1612,7 @@ export default function AgentAssignmentDashboard() {
         <div className="space-y-4">
           {/* First row of agents */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {agents.slice(0, Math.ceil(agents.length / 2)).map((agent) => {
+            {workloadAgents.slice(0, Math.ceil(workloadAgents.length / 2)).map((agent) => {
               const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
 
               return (
@@ -1417,7 +1645,7 @@ export default function AgentAssignmentDashboard() {
 
           {/* Second row of agents */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {agents.slice(Math.ceil(agents.length / 2)).map((agent) => {
+            {workloadAgents.slice(Math.ceil(workloadAgents.length / 2)).map((agent) => {
               const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
 
               return (
@@ -1530,7 +1758,7 @@ export default function AgentAssignmentDashboard() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={toggleTableExpanded} className="ml-2">
+                  <Button variant="outline" size="sm" onClick={toggleTableExpanded} className="ml-2 bg-transparent">
                     {isTableExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     <span className="ml-2">{isTableExpanded ? "Collapse" : "Expand"}</span>
                   </Button>
@@ -1564,7 +1792,7 @@ export default function AgentAssignmentDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-agents">All Agents</SelectItem>
-                {agents.map((agent) => (
+                {workloadAgents.map((agent) => (
                   <SelectItem key={agent} value={agent.toLowerCase()}>
                     {agent}
                   </SelectItem>
@@ -1607,7 +1835,7 @@ export default function AgentAssignmentDashboard() {
           <div className="flex items-end gap-2">
             <Button
               variant="outline"
-              className="flex-1 border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-100"
+              className="flex-1 border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 dark:text-gray-100 bg-transparent"
               onClick={resetFilters}
             >
               Reset Filters
@@ -1888,7 +2116,7 @@ export default function AgentAssignmentDashboard() {
                                 <SelectValue placeholder="Select agent" />
                               </SelectTrigger>
                               <SelectContent>
-                                {agents.map((agent) => (
+                                {workloadAgents.map((agent) => (
                                   <SelectItem key={agent} value={agent}>
                                     {agent}
                                   </SelectItem>
@@ -1963,6 +2191,109 @@ export default function AgentAssignmentDashboard() {
           )}
         </div>
       </div>
+
+      {/* Workload Agent Management Modal */}
+      <Dialog open={showWorkloadAgentManagement} onOpenChange={setShowWorkloadAgentManagement}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Workload Agents</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Available Agents */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Available Agents</label>
+              <div className="space-y-2 max-h-60 overflow-y-auto border rounded p-2">
+                {availableAgents.map((agent) => {
+                  const isInWorkload = workloadAgents.includes(agent)
+                  const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
+
+                  return (
+                    <div
+                      key={agent}
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={isInWorkload}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              addAgentToWorkload(agent)
+                            } else {
+                              removeAgentFromWorkload(agent)
+                            }
+                          }}
+                        />
+                        <span>{agent}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>{workload.total} clients</span>
+                        {isInWorkload ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAgentFromWorkload(agent)}
+                            className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 h-6 w-6 p-0"
+                          >
+                            <UserMinus className="h-3 w-3" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addAgentToWorkload(agent)}
+                            className="text-green-600 hover:bg-green-100 dark:hover:bg-green-900/20 h-6 w-6 p-0"
+                          >
+                            <UserPlus className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Current Workload Agents */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Current Workload Agents ({workloadAgents.length})
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-2">
+                {workloadAgents.map((agent) => {
+                  const workload = agentWorkloads[agent.toLowerCase()] || { total: 0, daily: 0 }
+
+                  return (
+                    <div
+                      key={agent}
+                      className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded"
+                    >
+                      <span className="font-medium">{agent}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{workload.total} clients</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAgentFromWorkload(agent)}
+                          className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 h-6 w-6 p-0"
+                        >
+                          <UserMinus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWorkloadAgentManagement(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Export Options Modal */}
       <ExportOptionsModal />

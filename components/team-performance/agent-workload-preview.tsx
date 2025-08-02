@@ -5,10 +5,7 @@ import { Calendar, Users } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot } from "firebase/firestore"
-
-// Sample agent names - ensure these match the ones in agent-assignment-dashboard.tsx
-const agents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+import { collection, onSnapshot, doc, getDoc } from "firebase/firestore"
 
 // Interface for client assignment data
 interface ClientAssignment {
@@ -31,7 +28,40 @@ interface AgentWorkloadPreviewProps {
 
 export default function AgentWorkloadPreview({ open, onOpenChange }: AgentWorkloadPreviewProps) {
   const [clients, setClients] = useState<ClientAssignment[]>([])
+  const [agents, setAgents] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Load workload agents from Firestore
+  useEffect(() => {
+    if (!open) return
+
+    const loadWorkloadAgents = async () => {
+      try {
+        const workloadAgentsDoc = await getDoc(doc(db, "settings", "workloadAgents"))
+        if (workloadAgentsDoc.exists()) {
+          const workloadAgentsData = workloadAgentsDoc.data().agents
+          if (Array.isArray(workloadAgentsData) && workloadAgentsData.length > 0) {
+            setAgents(workloadAgentsData)
+          } else {
+            // Fallback to default agents
+            const defaultAgents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+            setAgents(defaultAgents)
+          }
+        } else {
+          // Fallback to default agents
+          const defaultAgents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+          setAgents(defaultAgents)
+        }
+      } catch (error) {
+        console.error("Error loading workload agents:", error)
+        // Fallback to default agents
+        const defaultAgents = ["Cuu", "Jhe", "Kel", "Ken", "Kyrie", "Lovely", "Mar", "Primo", "Vivian"]
+        setAgents(defaultAgents)
+      }
+    }
+
+    loadWorkloadAgents()
+  }, [open])
 
   // Load clients from Firestore on component mount
   useEffect(() => {

@@ -10,6 +10,7 @@ import WithdrawalsTable from "@/components/withdrawals-table"
 import SettingsPanel from "@/components/settings-panel"
 import DashboardComponent from "@/components/dashboard/dashboard-component"
 import TeamPerformancePage from "@/components/team-performance/team-page"
+import AgentPerformancePage from "@/components/agent-performance/agent-performance-page"
 import OrderRequestPage from "@/components/order-requests/order-request-page"
 import Sidebar from "@/components/sidebar"
 import NavBar from "@/components/nav-bar"
@@ -18,6 +19,7 @@ import ReportsPage from "@/components/reports/reports-page"
 import InventoryPage from "@/components/inventory/inventory-page"
 import VideoCallTemplate from "@/components/videocall/video-call-template"
 import AnnouncementManagement from "@/components/announcements/announcement-management"
+import AnnouncementPopup from "@/components/announcements/announcement-popup"
 
 export default function Home() {
   const searchParams = useSearchParams()
@@ -98,6 +100,10 @@ export default function Home() {
             <TeamPerformancePage />
           </TabsContent>
 
+          <TabsContent value="agent-performance" className="mt-0">
+            <AgentPerformancePage />
+          </TabsContent>
+
           <TabsContent value="reports" className="mt-0">
             <ReportsPage />
           </TabsContent>
@@ -119,6 +125,8 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <AnnouncementPopup />
     </div>
   )
 }

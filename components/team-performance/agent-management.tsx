@@ -31,6 +31,7 @@ export default function AgentManagement() {
     email: "",
     phone: "",
     position: "",
+    role: "Regular" as const,
     joinDate: "",
     status: "Active" as const,
   })
@@ -46,8 +47,9 @@ export default function AgentManagement() {
     const filtered = agents.filter(
       (agent) =>
         agent.name.toLowerCase().includes(term) ||
-        agent.email.toLowerCase().includes(term) ||
-        agent.position.toLowerCase().includes(term),
+        agent.email?.toLowerCase().includes(term) ||
+        agent.position?.toLowerCase().includes(term) ||
+        agent.role?.toLowerCase().includes(term),
     )
     setFilteredAgents(filtered)
   }, [agents, searchTerm])
@@ -67,6 +69,7 @@ export default function AgentManagement() {
       email: "",
       phone: "",
       position: "",
+      role: "Regular",
       joinDate: new Date().toISOString().split("T")[0],
       status: "Active",
     })
@@ -80,11 +83,12 @@ export default function AgentManagement() {
     setFormData({
       id: agent.id,
       name: agent.name,
-      email: agent.email,
+      email: agent.email || "",
       phone: agent.phone || "",
-      position: agent.position,
-      joinDate: agent.joinDate,
-      status: agent.status,
+      position: agent.position || "",
+      role: agent.role || "Regular",
+      joinDate: agent.joinDate || "",
+      status: agent.status || "Active",
     })
     setIsDialogOpen(true)
   }
@@ -129,8 +133,16 @@ export default function AgentManagement() {
         email: formData.email,
         phone: formData.phone,
         position: formData.position,
+        role: formData.role,
         joinDate: formData.joinDate,
         status: formData.status,
+        addedToday: 0,
+        monthlyAdded: 0,
+        openAccounts: 0,
+        totalDeposits: 0,
+        totalWithdrawals: 0,
+        commission: 0,
+        commissionRate: 0,
       }
 
       if (dialogMode === "add") {
@@ -138,14 +150,12 @@ export default function AgentManagement() {
         toast({
           title: "Agent Added",
           description: `${agentData.name} has been added successfully.`,
-          variant: "success",
         })
       } else {
         await updateAgent(agentData)
         toast({
           title: "Agent Updated",
           description: `${agentData.name}'s information has been updated.`,
-          variant: "success",
         })
       }
 
@@ -166,9 +176,24 @@ export default function AgentManagement() {
       toast({
         title: "Agent Deleted",
         description: `${selectedAgent.name} has been removed.`,
-        variant: "success",
       })
       setIsDeleteDialogOpen(false)
+    }
+  }
+
+  // Get role badge color
+  const getRoleBadgeColor = (role?: string) => {
+    switch (role) {
+      case "Team Leader":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+      case "Elite":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+      case "Regular":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+      case "Spammer":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
     }
   }
 
@@ -201,6 +226,7 @@ export default function AgentManagement() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Position</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Join Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -213,11 +239,18 @@ export default function AgentManagement() {
                   <TableCell className="font-medium">{agent.name}</TableCell>
                   <TableCell>{agent.email}</TableCell>
                   <TableCell>{agent.position}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(agent.role)}`}>
+                      {agent.role || "Regular"}
+                    </span>
+                  </TableCell>
                   <TableCell>{agent.joinDate}</TableCell>
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        agent.status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        agent.status === "Active"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                       }`}
                     >
                       {agent.status}
@@ -249,7 +282,7 @@ export default function AgentManagement() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No agents found
                 </TableCell>
               </TableRow>
@@ -260,16 +293,24 @@ export default function AgentManagement() {
 
       {/* Add/Edit Agent Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{dialogMode === "add" ? "Add New Agent" : "Edit Agent"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  className="bg-background"
+                />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <Input
@@ -278,28 +319,46 @@ export default function AgentManagement() {
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  placeholder="Enter agent email"
                   required
+                  className="bg-background"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
-              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="position">Position *</Label>
-                <Input id="position" name="position" value={formData.position} onChange={handleInputChange} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="joinDate">Join Date *</Label>
                 <Input
-                  id="joinDate"
-                  name="joinDate"
-                  type="date"
-                  value={formData.joinDate}
+                  id="position"
+                  name="position"
+                  value={formData.position}
                   onChange={handleInputChange}
                   required
+                  className="bg-background"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="role">Role *</Label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      role: e.target.value as "Team Leader" | "Elite" | "Regular" | "Spammer",
+                    }))
+                  }
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  required
+                >
+                  <option value="Team Leader">Team Leader</option>
+                  <option value="Elite">Elite</option>
+                  <option value="Regular">Regular</option>
+                  <option value="Spammer">Spammer</option>
+                </select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
                 <select
@@ -309,19 +368,33 @@ export default function AgentManagement() {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, status: e.target.value as "Active" | "Inactive" }))
                   }
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   required
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="joinDate">Join Date *</Label>
+                <Input
+                  id="joinDate"
+                  name="joinDate"
+                  type="date"
+                  value={formData.joinDate}
+                  onChange={handleInputChange}
+                  required
+                  className="bg-background"
+                />
+              </div>
             </div>
-            <DialogFooter>
+
+            <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">{dialogMode === "add" ? "Add Agent" : "Save Changes"}</Button>
+              <Button type="submit">{dialogMode === "add" ? "Add Agent" : "Update Agent"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -1,6 +1,11 @@
 export interface Agent {
   id: string
   name: string
+  nickname: string
+  email: string
+  status?: "Active" | "Inactive"
+  role?: "Team Leader" | "Elite" | "Regular" | "Spammer"
+  joinDate?: string
   addedToday: number
   monthlyAdded: number
   openAccounts: number
@@ -8,11 +13,6 @@ export interface Agent {
   totalWithdrawals?: number
   commission?: number
   commissionRate?: number
-  email?: string
-  phone?: string
-  position?: string
-  joinDate?: string
-  status?: "Active" | "Inactive"
   lastEditedBy?: string
   lastEditedAt?: string
 }
@@ -21,8 +21,8 @@ export interface Penalty {
   id: string
   agentId: string
   agentName: string
-  description: string
   amount: number
+  description: string
   date: string
 }
 
@@ -30,10 +30,9 @@ export interface Reward {
   id: string
   agentId: string
   agentName: string
-  description: string
   amount: number
+  description: string
   date: string
-  status: "Received" | "Pending" | "Cancelled"
 }
 
 export interface Attendance {
@@ -42,7 +41,7 @@ export interface Attendance {
   agentName: string
   date: string
   status: "Whole Day" | "Half Day" | "Leave" | "Undertime"
-  remarks: string
+  remarks?: string
 }
 
 export interface TeamMetrics {
@@ -51,4 +50,13 @@ export interface TeamMetrics {
   totalMonthlyAdded: number
   totalOpenAccounts: number
   totalDeposits: number
+}
+
+export interface TeamStats {
+  totalAgents: number
+  activeAgents: number
+  totalClients: number
+  totalDeposits: number
+  totalWithdrawals: number
+  topAgent: string
 }

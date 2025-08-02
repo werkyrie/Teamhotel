@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Fingerprint, Mail, ArrowRight, Moon, Sun } from "lucide-react"
+import { Fingerprint, Mail, ArrowRight, Moon, Sun, UserPlus } from "lucide-react"
 import { motion } from "framer-motion"
 import "particles.js"
 import { Checkbox } from "@/components/ui/checkbox"
+import Link from "next/link"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -394,8 +395,28 @@ export default function LoginPage() {
                 </motion.form>
               </CardContent>
 
-              <CardFooter className="flex justify-center border-t border-gray-200 dark:border-gray-700/50 p-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Need help? Contact your system administrator</p>
+              <CardFooter className="flex flex-col space-y-4 border-t border-gray-200 dark:border-gray-700/50 p-6">
+                {/* Registration Link */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="w-full"
+                >
+                  <Link href="/register" className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full py-3 text-sm font-medium bg-transparent border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-300 rounded-xl group"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                      New Agent? Register Here
+                    </Button>
+                  </Link>
+                </motion.div>
+
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                  Need help? Contact your system administrator
+                </p>
               </CardFooter>
             </Card>
           </motion.div>

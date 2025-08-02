@@ -19,20 +19,26 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/context/auth-context"
-import { Trash2, UserPlus, Edit } from "lucide-react"
+import { Trash2, UserPlus, Edit, CheckCircle, XCircle, Clock, UserCheck } from "lucide-react"
 
 interface User {
   id: string
   email: string
   role: string
   displayName: string
+  nickname?: string
+  approved: boolean
   createdAt: any
+  registrationDate?: string
 }
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([])
+  const [pendingUsers, setPendingUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddUserOpen, setIsAddUserOpen] = useState(false)
   const [isEditUserOpen, setIsEditUserOpen] = useState(false)
@@ -41,7 +47,7 @@ export default function UserManagement() {
     password: "",
     confirmPassword: "",
     role: "Viewer",
-    displayName: "",
+    nickname: "",
   })
   const [editUser, setEditUser] = useState<User | null>(null)
   const { toast } = useToast()
@@ -52,20 +58,31 @@ export default function UserManagement() {
     const fetchUsers = async () => {
       try {
         const usersSnapshot = await getDocs(collection(db, "users"))
-        const usersList: User[] = []
+        const approvedUsersList: User[] = []
+        const pendingUsersList: User[] = []
 
         usersSnapshot.forEach((doc) => {
           const userData = doc.data()
-          usersList.push({
+          const user: User = {
             id: doc.id,
             email: userData.email || "",
             role: userData.role || "Viewer",
-            displayName: userData.displayName || "",
+            displayName: userData.displayName || userData.nickname || "",
+            nickname: userData.nickname || "",
+            approved: userData.approved !== false,
             createdAt: userData.createdAt,
-          })
+            registrationDate: userData.registrationDate,
+          }
+
+          if (userData.approved === false) {
+            pendingUsersList.push(user)
+          } else {
+            approvedUsersList.push(user)
+          }
         })
 
-        setUsers(usersList)
+        setUsers(approvedUsersList)
+        setPendingUsers(pendingUsersList)
       } catch (error) {
         console.error("Error fetching users:", error)
         toast({
@@ -80,6 +97,67 @@ export default function UserManagement() {
 
     fetchUsers()
   }, [toast])
+
+  const handleApproveUser = async (userId: string) => {
+    try {
+      // Update user document to set approved = true
+      await setDoc(
+        doc(db, "users", userId),
+        {
+          approved: true,
+          approvedAt: serverTimestamp(),
+          approvedBy: currentUser?.uid,
+        },
+        { merge: true },
+      )
+
+      // Move user from pending to approved list
+      const approvedUser = pendingUsers.find((user) => user.id === userId)
+      if (approvedUser) {
+        approvedUser.approved = true
+        setUsers([...users, approvedUser])
+        setPendingUsers(pendingUsers.filter((user) => user.id !== userId))
+      }
+
+      toast({
+        title: "Success",
+        description: "User approved successfully",
+      })
+    } catch (error: any) {
+      console.error("Error approving user:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve user",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRejectUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to reject this user? This will permanently delete their account.")) {
+      return
+    }
+
+    try {
+      // Delete user document from Firestore
+      await deleteDoc(doc(db, "users", userId))
+
+      // Remove user from pending list
+      setPendingUsers(pendingUsers.filter((user) => user.id !== userId))
+
+      toast({
+        title: "Success",
+        description: "User rejected and account deleted",
+      })
+    } catch (error: any) {
+      console.error("Error rejecting user:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject user",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleAddUser = async () => {
     if (newUser.password !== newUser.confirmPassword) {
@@ -108,8 +186,11 @@ export default function UserManagement() {
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email: newUser.email,
         role: newUser.role,
-        displayName: newUser.displayName || newUser.email.split("@")[0],
+        displayName: newUser.nickname || newUser.email.split("@")[0],
+        nickname: newUser.nickname || newUser.email.split("@")[0],
+        approved: true, // Admin-created users are auto-approved
         createdAt: serverTimestamp(),
+        createdBy: currentUser?.uid,
       })
 
       // Add user to local state
@@ -119,7 +200,9 @@ export default function UserManagement() {
           id: userCredential.user.uid,
           email: newUser.email,
           role: newUser.role,
-          displayName: newUser.displayName || newUser.email.split("@")[0],
+          displayName: newUser.nickname || newUser.email.split("@")[0],
+          nickname: newUser.nickname || newUser.email.split("@")[0],
+          approved: true,
           createdAt: new Date(),
         },
       ])
@@ -130,7 +213,7 @@ export default function UserManagement() {
         password: "",
         confirmPassword: "",
         role: "Viewer",
-        displayName: "",
+        nickname: "",
       })
       setIsAddUserOpen(false)
 
@@ -158,7 +241,8 @@ export default function UserManagement() {
         {
           email: editUser.email,
           role: editUser.role,
-          displayName: editUser.displayName,
+          displayName: editUser.nickname || editUser.displayName,
+          nickname: editUser.nickname,
         },
         { merge: true },
       )
@@ -225,7 +309,7 @@ export default function UserManagement() {
         <div className="flex justify-between items-center">
           <div>
             <CardTitle>User Management</CardTitle>
-            <CardDescription>Manage user accounts and permissions</CardDescription>
+            <CardDescription>Manage user accounts, permissions, and approvals</CardDescription>
           </div>
           <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
             <DialogTrigger asChild>
@@ -251,11 +335,11 @@ export default function UserManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
+                  <Label htmlFor="nickname">Nickname</Label>
                   <Input
-                    id="displayName"
-                    value={newUser.displayName}
-                    onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })}
+                    id="nickname"
+                    value={newUser.nickname}
+                    onChange={(e) => setNewUser({ ...newUser, nickname: e.target.value })}
                     placeholder="John Doe"
                   />
                 </div>
@@ -319,11 +403,11 @@ export default function UserManagement() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-displayName">Display Name</Label>
+                    <Label htmlFor="edit-nickname">Nickname</Label>
                     <Input
-                      id="edit-displayName"
-                      value={editUser.displayName}
-                      onChange={(e) => setEditUser({ ...editUser, displayName: e.target.value })}
+                      id="edit-nickname"
+                      value={editUser.nickname || ""}
+                      onChange={(e) => setEditUser({ ...editUser, nickname: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -354,69 +438,144 @@ export default function UserManagement() {
         {loading ? (
           <div className="text-center py-4">Loading users...</div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center">
-                    No users found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.displayName || "—"}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          user.role === "Admin"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
-                        }`}
-                      >
-                        {user.role}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditUser(user)
-                          setIsEditUserOpen(true)
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteUser(user.id)}
-                        disabled={user.id === currentUser?.uid}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </TableCell>
+          <Tabs defaultValue="approved" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="approved" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                Approved Users ({users.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Pending Approval ({pendingUsers.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="approved">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center">
+                        No approved users found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.nickname || user.displayName || "—"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.role === "Admin" ? "default" : "secondary"}>{user.role}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Approved
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setEditUser(user)
+                              setIsEditUserOpen(true)
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={user.id === currentUser?.uid}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="pending">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Registration Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center">
+                        No pending approvals
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    pendingUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.nickname || user.displayName || "—"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {user.registrationDate ? new Date(user.registrationDate).toLocaleDateString() : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleApproveUser(user.id)}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="sr-only">Approve</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRejectUser(user.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            <span className="sr-only">Reject</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
         )}
       </CardContent>
       <CardFooter className="flex justify-between">
-        <div className="text-sm text-muted-foreground">Total users: {users.length}</div>
+        <div className="text-sm text-muted-foreground">
+          Total users: {users.length} approved, {pendingUsers.length} pending
+        </div>
       </CardFooter>
     </Card>
   )

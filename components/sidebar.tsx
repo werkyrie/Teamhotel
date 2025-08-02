@@ -30,6 +30,7 @@ import {
   Cog,
   Video,
   Megaphone,
+  UserCheck,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -144,6 +145,14 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     }
 
     // Close mobile menu if open
+    if (isMobile) {
+      setIsSheetOpen(false)
+    }
+  }
+
+  // Navigate to profile page
+  const navigateToProfile = () => {
+    router.push("/profile")
     if (isMobile) {
       setIsSheetOpen(false)
     }
@@ -283,6 +292,11 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           icon: <BarChart3 className="h-6 w-6" />,
         },
         {
+          id: "agent-performance",
+          label: "Agent Performance",
+          icon: <UserCheck className="h-6 w-6" />,
+        },
+        {
           id: "reports",
           label: "Reports",
           icon: <FileText className="h-6 w-6" />,
@@ -318,7 +332,6 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     },
   ]
 
-  // Rest of the component remains the same...
   // Mobile sidebar using Sheet component
   if (isMobile) {
     return (
@@ -356,16 +369,22 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   </SheetClose>
                 </div>
 
-                {/* User info */}
-                <div className="flex items-center p-4 border-b bg-muted/30">
+                {/* User info - Clickable to go to profile */}
+                <div
+                  className="flex items-center p-4 border-b bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors duration-200"
+                  onClick={navigateToProfile}
+                >
                   <div className="relative">
-                    <Avatar className="h-12 w-12 border-2 border-primary/20">{getAvatarContent()}</Avatar>
+                    <Avatar className="h-12 w-12 border-2 border-primary/20 hover:border-primary/50 transition-colors">
+                      {getAvatarContent()}
+                    </Avatar>
                     <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white"></span>
                   </div>
                   <div className="ml-3">
                     <p className="font-medium">{user?.username}</p>
                     <p className="text-xs text-muted-foreground">{user?.role}</p>
                   </div>
+                  <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
                 </div>
 
                 {/* Navigation */}
@@ -495,12 +514,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           )}
         </div>
 
-        {/* User info */}
+        {/* User info - Clickable to go to profile */}
         <div
           className={cn(
-            "flex items-center p-4 border-b bg-muted/30 transition-all duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+            "flex items-center p-4 border-b bg-muted/30 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer hover:bg-muted/50",
             collapsed ? "justify-center" : "",
           )}
+          onClick={navigateToProfile}
         >
           <div className="relative">
             <Avatar
@@ -522,11 +542,17 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             <p className="font-medium whitespace-nowrap">{user?.username}</p>
             <p className="text-xs text-muted-foreground whitespace-nowrap">{user?.role}</p>
           </div>
+          {!collapsed && (
+            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200 hover:translate-x-1" />
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="ml-auto h-8 w-8 transition-all duration-300 hover:bg-primary/10 active:scale-95"
-            onClick={toggleCollapse}
+            onClick={(e) => {
+              e.stopPropagation() // Prevent profile navigation when clicking collapse button
+              toggleCollapse()
+            }}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronRight
